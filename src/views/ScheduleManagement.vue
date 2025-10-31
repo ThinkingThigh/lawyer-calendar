@@ -3,12 +3,15 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { scheduleStorage, userStorage } from '../services/storage.js'
 import { Schedule, STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
+import { Search } from '@element-plus/icons-vue'
 import {
   ElCard,
   ElButton,
   ElTable,
   ElTableColumn,
   ElInput,
+  ElSelect,
+  ElOption,
   ElTag,
   ElMessage,
   ElPopconfirm,
@@ -18,6 +21,8 @@ import {
 const schedules = ref([])
 const users = ref([])
 const searchQuery = ref('')
+const selectedUserId = ref('')
+const userSearchQuery = ref('')
 const dialogVisible = ref(false)
 const dialogTitle = ref('添加日程')
 const isEditMode = ref(false)
@@ -26,16 +31,37 @@ const selectedSchedules = ref([])
 // 表单数据
 const scheduleForm = ref(new Schedule())
 
+// 过滤后的用户列表
+const filteredUsers = computed(() => {
+  if (!userSearchQuery.value) return users.value
+
+  const query = userSearchQuery.value.toLowerCase()
+  return users.value.filter(user =>
+    user.name.toLowerCase().includes(query) ||
+    user.phone.toLowerCase().includes(query)
+  )
+})
+
 // 过滤后的日程列表
 const filteredSchedules = computed(() => {
-  if (!searchQuery.value) return schedules.value
+  let result = schedules.value
 
-  const query = searchQuery.value.toLowerCase()
-  return schedules.value.filter(schedule =>
-    schedule.title.toLowerCase().includes(query) ||
-    schedule.description.toLowerCase().includes(query) ||
-    schedule.location.toLowerCase().includes(query)
-  )
+  // 按用户过滤
+  if (selectedUserId.value) {
+    result = result.filter(schedule => schedule.userId === selectedUserId.value)
+  }
+
+  // 按关键词搜索
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    result = result.filter(schedule =>
+      schedule.title.toLowerCase().includes(query) ||
+      schedule.description.toLowerCase().includes(query) ||
+      schedule.location.toLowerCase().includes(query)
+    )
+  }
+
+  return result
 })
 
 // 加载数据
@@ -146,6 +172,18 @@ const handleSelectionChange = (selection) => {
   selectedSchedules.value = selection.map(item => item.id)
 }
 
+// 搜索用户
+const searchUsers = (query) => {
+  userSearchQuery.value = query
+}
+
+// 清空搜索条件
+const clearSearch = () => {
+  searchQuery.value = ''
+  selectedUserId.value = ''
+  userSearchQuery.value = ''
+}
+
 onMounted(() => {
   loadData()
 })
@@ -178,12 +216,34 @@ onMounted(() => {
           v-model="searchQuery"
           placeholder="搜索日程标题、描述或地点"
           clearable
-          style="width: 300px"
+          style="width: 300px; margin-right: 10px"
         >
           <template #prefix>
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
+
+        <el-select
+          v-model="selectedUserId"
+          placeholder="选择用户"
+          filterable
+          remote
+          :remote-method="searchUsers"
+          clearable
+          style="width: 200px; margin-right: 10px"
+          @clear="userSearchQuery = ''"
+        >
+          <el-option
+            v-for="user in filteredUsers"
+            :key="user.id"
+            :label="`${user.name} (${user.phone})`"
+            :value="user.id"
+          />
+        </el-select>
+
+        <el-button @click="clearSearch" type="default">
+          清空搜索
+        </el-button>
       </div>
 
       <!-- 日程列表 -->
@@ -243,7 +303,7 @@ onMounted(() => {
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
             <el-button
               size="small"
