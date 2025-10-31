@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
+  base: './', // 设置为相对路径，确保Electron能正确加载资源
   server: {
     hmr: {
       // 禁用HMR的WebSocket连接，避免连接失败的错误
@@ -13,4 +14,8 @@ export default defineConfig({
     host: 'localhost',
     port: 5173,
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+  }
 })
