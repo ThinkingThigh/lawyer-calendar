@@ -27,7 +27,36 @@ class ReminderService {
     }
 
     try {
-      const permission = await Notification.requestPermission()
+      // 检查是否已经有权限，避免重复请求
+      if (Notification.permission === 'granted') {
+        this.permissionGranted = true
+        console.log('通知权限已获取')
+        return true
+      }
+
+      if (Notification.permission === 'denied') {
+        this.permissionGranted = false
+        console.warn('通知权限已被拒绝')
+        return false
+      }
+
+      // 请求权限 - 使用Promise包装以避免异步问题
+      const permission = await new Promise((resolve) => {
+        try {
+          const result = Notification.requestPermission()
+          // 现代浏览器返回Promise
+          if (result && typeof result.then === 'function') {
+            result.then(resolve)
+          } else {
+            // 旧版浏览器直接返回值
+            resolve(result)
+          }
+        } catch (error) {
+          console.warn('权限请求失败:', error)
+          resolve('denied')
+        }
+      })
+
       this.permissionGranted = permission === 'granted'
 
       if (this.permissionGranted) {
@@ -39,6 +68,11 @@ class ReminderService {
       return this.permissionGranted
     } catch (error) {
       console.error('获取通知权限失败:', error)
+      // 如果是扩展相关的错误，尝试降级处理
+      if (error.message && error.message.includes('extension')) {
+        console.warn('检测到浏览器扩展冲突，提醒功能可能受限')
+        return false
+      }
       return false
     }
   }
