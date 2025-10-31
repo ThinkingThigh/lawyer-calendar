@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { scheduleStorage, userStorage } from '../services/storage.js'
 import { Schedule, STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
@@ -61,10 +61,11 @@ const addSchedule = () => {
 }
 
 // 编辑日程
-const editSchedule = (schedule) => {
-  scheduleForm.value = new Schedule(schedule)
+const editSchedule = async (schedule) => {
+  scheduleForm.value = { ...schedule }
   dialogTitle.value = '编辑日程'
   isEditMode.value = true
+  await nextTick()
   dialogVisible.value = true
 }
 
@@ -271,6 +272,7 @@ onMounted(() => {
       :title="dialogTitle"
       :is-edit-mode="isEditMode"
       :model-value="scheduleForm"
+      @update:model-value="scheduleForm = $event"
       @save="handleSaveSchedule"
       @delete="handleDeleteSchedule"
     />
