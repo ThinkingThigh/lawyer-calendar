@@ -219,7 +219,7 @@ onMounted(() => {
           eventClick: handleEventClick,
           eventContent: eventContent,
           height: 'calc(100vh - 200px)',
-          dayMaxEvents: true,
+          dayMaxEvents: 3,
           moreLinkClick: 'popover'
         }"
       />
@@ -280,5 +280,22 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+/* FullCalendar 弹出框样式优化 */
+:deep(.fc-popover) {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+:deep(.fc-popover-body) {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* 确保事件列表可滚动 */
+:deep(.fc-daygrid-more-popup) {
+  max-height: 200px;
+  overflow-y: auto;
 }
 </style>
