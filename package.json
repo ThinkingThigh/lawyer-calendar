@@ -12,6 +12,7 @@
     "electron-dev": "NODE_ENV=development electron .",
     "build-electron": "npm run build && electron-builder",
     "build-win": "npm run build && electron-builder --win",
+    "build-mac": "npm run build && electron-builder --mac",
     "build-all": "npm run build && electron-builder --win --mac --linux"
   },
   "dependencies": {
@@ -46,6 +47,10 @@
     ],
     "win": {
       "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity"
     },
     "nsis": {
       "oneClick": false,
