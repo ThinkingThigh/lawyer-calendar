@@ -46,9 +46,11 @@ export const userStorage = {
   async add(userData) {
     try {
       const users = await this.getAll()
+      // 创建新用户时，确保使用新生成的唯一ID，忽略传入的id（如果有的话）
+      const { id, ...dataWithoutId } = userData
       const newUser = {
         id: generateId(),
-        ...userData,
+        ...dataWithoutId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -149,9 +151,11 @@ export const scheduleStorage = {
   async add(scheduleData) {
     try {
       const schedules = await this.getAll()
+      // 创建新日程时，确保使用新生成的唯一ID，忽略传入的id（如果有的话）
+      const { id, ...dataWithoutId } = scheduleData
       const newSchedule = {
         id: generateId(),
-        ...scheduleData,
+        ...dataWithoutId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }

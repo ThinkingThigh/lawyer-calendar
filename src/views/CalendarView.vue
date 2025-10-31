@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { scheduleStorage, settingsStorage } from '../services/storage.js'
-import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, Schedule } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -24,20 +24,10 @@ const schedules = ref([])
 const dialogVisible = ref(false)
 const dialogTitle = ref('添加日程')
 const isEditMode = ref(false)
+const dialogKey = ref(0) // 用于强制重新渲染对话框组件
 
 // 表单数据
-const scheduleForm = ref({
-  id: '',
-  title: '',
-  description: '',
-  startTime: '',
-  endTime: '',
-  userId: null,
-  location: '',
-  priority: 'medium',
-  status: 'pending',
-  reminder: 0
-})
+const scheduleForm = ref(new Schedule())
 
 // 加载数据
 const loadData = async () => {
@@ -99,16 +89,42 @@ const handleDateClick = (arg) => {
   scheduleForm.value.endTime = arg.dateStr + 'T10:00'
   dialogTitle.value = '添加日程'
   isEditMode.value = false
+  dialogKey.value++ // 强制重新渲染对话框
   dialogVisible.value = true
 }
 
 // 处理事件点击
-const handleEventClick = (arg) => {
+const handleEventClick = async (arg) => {
   const schedule = schedules.value.find(s => s.id === arg.event.id)
   if (schedule) {
-    scheduleForm.value = { ...schedule }
+    // 如果对话框已经打开，先关闭它
+    if (dialogVisible.value) {
+      dialogVisible.value = false
+      await nextTick()
+    }
+
+    // 重置表单并设置新数据
+    resetForm()
+
+    // 直接设置完整的数据对象
+    scheduleForm.value = {
+      id: schedule.id,
+      title: schedule.title,
+      description: schedule.description,
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+      userId: schedule.userId,
+      location: schedule.location,
+      priority: schedule.priority,
+      status: schedule.status,
+      reminder: schedule.reminder
+    }
+
     dialogTitle.value = '编辑日程'
     isEditMode.value = true
+
+    // 等待数据更新后再显示对话框
+    await nextTick()
     dialogVisible.value = true
   }
 }
@@ -211,10 +227,12 @@ onMounted(() => {
 
     <!-- 日程对话框组件 -->
     <ScheduleDialog
+      :key="dialogKey"
       v-model:visible="dialogVisible"
       :title="dialogTitle"
       :is-edit-mode="isEditMode"
       :model-value="scheduleForm"
+      @update:model-value="scheduleForm = $event"
       @save="handleSaveSchedule"
       @delete="handleDeleteSchedule"
     />

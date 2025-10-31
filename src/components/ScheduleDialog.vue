@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { userStorage } from '../services/storage.js'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
 import {
@@ -51,7 +51,21 @@ const formRef = ref(null)
 const users = ref([])
 
 // 表单数据
-const formData = ref({ ...props.modelValue })
+const formData = ref({
+  id: '',
+  title: '',
+  description: '',
+  startTime: '',
+  endTime: '',
+  userId: null,
+  location: '',
+  priority: 'medium',
+  status: 'pending',
+  reminder: 0
+})
+
+// 标记是否正在同步数据，避免递归更新
+const isSyncing = ref(false)
 
 const formRules = {
   title: [{ required: true, message: '请输入日程标题', trigger: 'blur' }],
@@ -67,16 +81,40 @@ const userOptions = computed(() => {
   }))
 })
 
-// 监听外部数据变化
-watch(() => props.modelValue, (newValue) => {
-  formData.value = { ...newValue }
-}, { deep: true })
-
+// 监听对话框显示状态
 watch(() => props.visible, async (visible) => {
   if (visible) {
+    // 当对话框打开时，同步表单数据
+    isSyncing.value = true
+    await nextTick()
+    formData.value = { ...props.modelValue }
     await loadUsers()
+    isSyncing.value = false
+  } else {
+    // 当对话框关闭时，重置表单数据
+    isSyncing.value = true
+    formData.value = {
+      id: '',
+      title: '',
+      description: '',
+      startTime: '',
+      endTime: '',
+      userId: null,
+      location: '',
+      priority: 'medium',
+      status: 'pending',
+      reminder: 0
+    }
+    isSyncing.value = false
   }
 })
+
+// 监听表单数据变化，同步到父组件
+watch(() => formData.value, (newValue) => {
+  if (props.visible && !isSyncing.value) {
+    emit('update:modelValue', { ...newValue })
+  }
+}, { deep: true })
 
 // 加载用户数据
 const loadUsers = async () => {
