@@ -19,14 +19,22 @@ onUnmounted(() => {
 
 // 请求通知权限
 const requestPermission = async () => {
-  const granted = await reminderService.requestPermission()
-  permissionStatus.value = reminderService.getPermissionStatus()
+  try {
+    const granted = await reminderService.requestPermission()
+    permissionStatus.value = reminderService.getPermissionStatus()
 
-  if (granted) {
-    ElMessage.success('通知权限已获取，开始启用提醒功能')
-    startReminderService()
-  } else {
-    ElMessage.warning('通知权限被拒绝，无法启用提醒功能')
+    if (granted) {
+      ElMessage.success('通知权限已获取，开始启用提醒功能')
+      startReminderService()
+    } else if (permissionStatus.value === 'denied') {
+      ElMessage.warning('通知权限被拒绝，无法启用提醒功能。您可以在浏览器设置中重新启用。')
+    } else {
+      ElMessage.info('通知权限请求已取消。如需使用提醒功能，请重新请求权限。')
+    }
+  } catch (error) {
+    console.error('权限请求过程中出错:', error)
+    ElMessage.error('权限请求失败，请检查浏览器设置或禁用可能干扰的扩展。')
+    permissionStatus.value = reminderService.getPermissionStatus()
   }
 }
 
@@ -207,6 +215,15 @@ const testReminder = () => {
         <li>支持Chrome、Firefox、Safari等现代浏览器</li>
         <li>需要用户授权通知权限</li>
         <li>HTTPS环境下功能更稳定</li>
+        <li>某些浏览器扩展可能影响通知功能</li>
+      </ul>
+
+      <h4>故障排除：</h4>
+      <ul>
+        <li><strong>权限被拒绝：</strong>在浏览器设置中重新启用通知权限</li>
+        <li><strong>扩展冲突：</strong>尝试禁用广告拦截器或其他可能干扰的扩展</li>
+        <li><strong>功能异常：</strong>刷新页面或重启浏览器后重试</li>
+        <li><strong>不支持：</strong>某些移动浏览器可能不支持完整功能</li>
       </ul>
     </div>
   </div>
