@@ -72,7 +72,7 @@ const menuItems = [
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  max-width: 1200px;
+  /* max-width: 1200px; */
   margin: 0 auto;
 }
 
