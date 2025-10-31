@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { settingsStorage, dataExport } from '../services/storage.js'
 import { CALENDAR_VIEWS, THEME_OPTIONS } from '../models/types.js'
+import ReminderManager from '../components/ReminderManager.vue'
 import {
   ElCard,
   ElForm,
@@ -138,6 +139,11 @@ onMounted(() => {
           导出数据
         </el-button>
       </div>
+
+      <el-divider />
+
+      <!-- 提醒管理 -->
+      <ReminderManager />
 
       <el-divider />
 
