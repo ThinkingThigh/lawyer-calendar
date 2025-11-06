@@ -74,15 +74,31 @@ const getEventColor = (priority, status) => {
 }
 
 // 格式化事件显示
-const eventContent = (arg) => {
-  return {
-    html: `
-      <div class="event-content">
-        <div class="event-title">${arg.event.title}</div>
-        ${arg.event.extendedProps.location ? `<div class="event-location">${arg.event.extendedProps.location}</div>` : ''}
-      </div>
-    `
+const eventDidMount = (arg) => {
+  const eventEl = arg.el
+  const event = arg.event
+
+  // 清空默认内容
+  eventEl.innerHTML = ''
+
+  // 创建自定义内容
+  const contentDiv = document.createElement('div')
+  contentDiv.className = 'event-content'
+
+  const titleDiv = document.createElement('div')
+  titleDiv.className = 'event-title'
+  titleDiv.textContent = event.title
+  contentDiv.appendChild(titleDiv)
+
+  // 在时间网格视图中，只显示标题以节省空间
+  if (view.type !== 'timeGridWeek' && view.type !== 'timeGridDay' && event.extendedProps.location) {
+    const locationDiv = document.createElement('div')
+    locationDiv.className = 'event-location'
+    locationDiv.textContent = event.extendedProps.location
+    contentDiv.appendChild(locationDiv)
   }
+
+  eventEl.appendChild(contentDiv)
 }
 
 // 处理日期点击
@@ -220,7 +236,7 @@ onMounted(() => {
           events: calendarEvents,
           dateClick: handleDateClick,
           eventClick: handleEventClick,
-          eventContent: eventContent,
+          eventDidMount: eventDidMount,
           height: 'calc(100vh - 200px)',
           dayMaxEvents: 3,
           moreLinkClick: 'popover'
@@ -302,5 +318,22 @@ onMounted(() => {
 :deep(.fc-daygrid-more-popup) {
   max-height: 200px;
   overflow-y: auto;
+}
+
+/* 时间网格视图中的事件样式优化 */
+:deep(.fc-timegrid-event) {
+  font-size: 11px;
+}
+
+:deep(.fc-timegrid-event .event-content) {
+  padding: 2px 4px;
+}
+
+:deep(.fc-timegrid-event .event-title) {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
 }
 </style>
