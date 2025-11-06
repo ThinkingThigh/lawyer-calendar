@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
-import { scheduleStorage, settingsStorage } from '../services/storage.js'
+import { scheduleStorage, settingsStorage, userStorage } from '../services/storage.js'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, Schedule } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
 import FullCalendar from '@fullcalendar/vue3'
@@ -19,6 +19,7 @@ import {
 const calendarRef = ref(null)
 const currentView = ref('dayGridMonth')
 const schedules = ref([])
+const users = ref([])
 
 // 对话框状态
 const dialogVisible = ref(false)
@@ -32,11 +33,13 @@ const scheduleForm = ref(new Schedule())
 // 加载数据
 const loadData = async () => {
   try {
-    const [scheduleData, settings] = await Promise.all([
+    const [scheduleData, userData, settings] = await Promise.all([
       scheduleStorage.getAll(),
+      userStorage.getAll(),
       settingsStorage.get()
     ])
     schedules.value = scheduleData
+    users.value = userData
     currentView.value = settings.calendarView
   } catch (error) {
     ElMessage.error('加载数据失败')
@@ -228,9 +231,11 @@ onMounted(() => {
     <!-- 日程对话框组件 -->
     <ScheduleDialog
       :key="dialogKey"
-      v-model:visible="dialogVisible"
+      :visible="dialogVisible"
+      @update:visible="dialogVisible = $event"
       :title="dialogTitle"
       :is-edit-mode="isEditMode"
+      :users="users"
       :model-value="scheduleForm"
       @update:model-value="scheduleForm = $event"
       @save="handleSaveSchedule"

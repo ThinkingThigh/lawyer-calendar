@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
-import { userStorage } from '../services/storage.js'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
 import {
   ElDialog,
@@ -28,6 +27,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  users: {
+    type: Array,
+    default: () => []
+  },
   modelValue: {
     type: Object,
     default: () => ({
@@ -37,6 +40,7 @@ const props = defineProps({
       startTime: '',
       endTime: '',
       userId: null,
+      location: '',
       location: '',
       priority: 'medium',
       status: 'pending',
@@ -48,7 +52,6 @@ const props = defineProps({
 const emit = defineEmits(['update:visible', 'update:modelValue', 'save', 'delete'])
 
 const formRef = ref(null)
-const users = ref([])
 
 // 表单数据
 const formData = ref({
@@ -75,7 +78,7 @@ const formRules = {
 
 // 用户选项
 const userOptions = computed(() => {
-  return users.value.map(user => ({
+  return props.users.map(user => ({
     value: user.id,
     label: user.name
   }))
@@ -88,7 +91,6 @@ watch(() => props.visible, async (visible) => {
     isSyncing.value = true
     await nextTick()
     formData.value = { ...props.modelValue }
-    await loadUsers()
     isSyncing.value = false
   } else {
     // 当对话框关闭时，重置表单数据
@@ -116,14 +118,6 @@ watch(() => formData.value, (newValue) => {
   }
 }, { deep: true })
 
-// 加载用户数据
-const loadUsers = async () => {
-  try {
-    users.value = await userStorage.getAll()
-  } catch (error) {
-    console.error('加载用户数据失败:', error)
-  }
-}
 
 // 保存日程
 const handleSave = async () => {

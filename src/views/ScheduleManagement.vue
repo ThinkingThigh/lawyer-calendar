@@ -328,9 +328,11 @@ onMounted(() => {
 
     <!-- 日程对话框组件 -->
     <ScheduleDialog
-      v-model:visible="dialogVisible"
+      :visible="dialogVisible"
+      @update:visible="dialogVisible = $event"
       :title="dialogTitle"
       :is-edit-mode="isEditMode"
+      :users="users"
       :model-value="scheduleForm"
       @update:model-value="scheduleForm = $event"
       @save="handleSaveSchedule"
