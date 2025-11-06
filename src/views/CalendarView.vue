@@ -77,6 +77,7 @@ const getEventColor = (priority, status) => {
 const eventDidMount = (arg) => {
   const eventEl = arg.el
   const event = arg.event
+  const view = arg.view
 
   // 清空默认内容
   eventEl.innerHTML = ''
