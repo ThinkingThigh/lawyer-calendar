@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, Notification, ipcMain } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -11,7 +11,7 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      preload: path.join(__dirname, 'preload.js') // 如果需要的话
+      preload: path.join(__dirname, 'preload.js')
     },
     icon: path.join(__dirname, 'public/vite.svg'), // 应用图标
     show: false // 先隐藏窗口，直到加载完成
@@ -60,4 +60,33 @@ app.on('web-contents-created', (event, contents) => {
     event.preventDefault();
     require('electron').shell.openExternal(navigationUrl);
   });
+});
+
+// 处理系统通知请求
+ipcMain.handle('show-notification', async (event, options) => {
+  if (Notification.isSupported()) {
+    const notification = new Notification(options);
+
+    // 点击通知时聚焦到应用窗口
+    notification.on('click', () => {
+      const windows = BrowserWindow.getAllWindows();
+      if (windows.length > 0) {
+        const mainWindow = windows[0];
+        if (mainWindow.isMinimized()) {
+          mainWindow.restore();
+        }
+        mainWindow.focus();
+        mainWindow.show();
+      }
+    });
+
+    notification.show();
+    return true;
+  }
+  return false;
+});
+
+// 检查通知权限
+ipcMain.handle('check-notification-permission', () => {
+  return Notification.isSupported();
 });

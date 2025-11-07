@@ -19,8 +19,27 @@ class ReminderService {
     console.log('提醒服务已启动')
   }
 
-  // 请求浏览器通知权限
+  // 请求通知权限
   async requestPermission() {
+    // 检测是否在Electron环境中
+    if (window.isElectron && window.electronAPI) {
+      try {
+        // 在Electron中，系统通知通常是自动支持的
+        const supported = await window.electronAPI.checkNotificationPermission()
+        this.permissionGranted = supported
+        if (supported) {
+          console.log('Electron系统通知权限已获取')
+        } else {
+          console.warn('Electron系统通知不支持')
+        }
+        return supported
+      } catch (error) {
+        console.error('检查Electron通知权限失败:', error)
+        return false
+      }
+    }
+
+    // Web环境下的浏览器通知权限请求
     if (!('Notification' in window)) {
       console.warn('此浏览器不支持通知功能')
       return false
@@ -138,7 +157,7 @@ class ReminderService {
   }
 
   // 显示通知
-  showNotification(schedule) {
+  async showNotification(schedule) {
     if (!this.permissionGranted) {
       console.warn('通知权限未获取，无法显示提醒')
       return
@@ -146,37 +165,59 @@ class ReminderService {
 
     try {
       const title = `日程提醒: ${schedule.title}`
-      const options = {
-        body: `开始时间: ${this.formatDateTime(schedule.startTime)}\n${schedule.description || ''}\n\n点击查看详情`,
-        icon: '/vite.svg', // 可以替换为应用图标
-        badge: '/vite.svg',
-        tag: `schedule-${schedule.id}`, // 避免重复通知
-        requireInteraction: true // 需要用户手动关闭
+      const body = `开始时间: ${this.formatDateTime(schedule.startTime)}\n${schedule.description || ''}\n\n点击查看详情`
+
+      // 检测是否在Electron环境中
+      if (window.isElectron && window.electronAPI) {
+        // 使用Electron系统通知
+        const options = {
+          title: title,
+          body: body,
+          icon: '/vite.svg', // 可以替换为应用图标
+          sound: true, // macOS上播放通知声音
+          urgency: 'normal'
+        }
+
+        const success = await window.electronAPI.showNotification(options)
+        if (success) {
+          console.log('Electron系统通知已发送:', schedule.title)
+        } else {
+          console.warn('Electron系统通知发送失败')
+        }
+      } else {
+        // 使用浏览器通知
+        const options = {
+          body: body,
+          icon: '/vite.svg',
+          badge: '/vite.svg',
+          tag: `schedule-${schedule.id}`, // 避免重复通知
+          requireInteraction: true // 需要用户手动关闭
+        }
+
+        const notification = new Notification(title, options)
+
+        // 点击通知跳转到日程详情
+        notification.onclick = () => {
+          // 如果应用在后台，聚焦到应用
+          window.focus()
+
+          // 可以在这里添加跳转逻辑，比如打开日程编辑对话框
+          // 这里需要通过事件总线或者全局状态来通知应用打开相应的日程
+          console.log('点击通知，查看日程:', schedule.id)
+
+          notification.close()
+        }
+
+        // 自动关闭通知（30秒后）
+        setTimeout(() => {
+          notification.close()
+        }, 30000)
       }
-
-      const notification = new Notification(title, options)
-
-    // 点击通知跳转到日程详情
-    notification.onclick = () => {
-      // 如果应用在后台，聚焦到应用
-      window.focus()
-
-      // 可以在这里添加跳转逻辑，比如打开日程编辑对话框
-      // 这里需要通过事件总线或者全局状态来通知应用打开相应的日程
-      console.log('点击通知，查看日程:', schedule.id)
-
-      notification.close()
-    }
-
-      // 自动关闭通知（30秒后）
-      setTimeout(() => {
-        notification.close()
-      }, 30000)
 
     } catch (error) {
       console.error('显示通知失败:', error)
       // 如果是actions相关的错误，提供友好的提示
-      if (error.message.includes('actions')) {
+      if (error.message && error.message.includes('actions')) {
         console.warn('浏览器不支持通知操作按钮，已移除该功能')
       }
     }
@@ -227,7 +268,19 @@ class ReminderService {
   }
 
   // 获取通知权限状态
-  getPermissionStatus() {
+  async getPermissionStatus() {
+    // 检测是否在Electron环境中
+    if (window.isElectron && window.electronAPI) {
+      try {
+        const supported = await window.electronAPI.checkNotificationPermission()
+        return supported ? 'granted' : 'not-supported'
+      } catch (error) {
+        console.error('检查Electron通知权限失败:', error)
+        return 'not-supported'
+      }
+    }
+
+    // Web环境
     if (!('Notification' in window)) {
       return 'not-supported'
     }
