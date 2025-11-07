@@ -2,6 +2,8 @@
   "name": "lawyer-calendar",
   "private": true,
   "version": "1.0.0",
+  "description": "Lawyer Calendar - 专为律师事务所设计的日程管理系统",
+  "author": "Lawyer Calendar Team",
   "main": "main.js",
   "homepage": "./",
   "scripts": {
@@ -48,7 +50,12 @@
       "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
     },
     "mac": {
       "target": "dmg",
@@ -60,7 +67,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Lawyer Calendar"
+      "shortcutName": "Lawyer Calendar",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
     }
   }
 }

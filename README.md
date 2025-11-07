@@ -88,6 +88,36 @@ npm run build-mac
 ./run-mac-app.sh
 ```
 
+### 运行Windows版本
+```bash
+run-win-app.bat
+# 或使用PowerShell
+run-win-app.ps1
+```
+
+### 构建Windows应用程序
+```bash
+npm run build-win
+```
+
+### 验证安装包
+```bash
+# Windows批处理脚本
+verify-installer.bat
+
+# 或使用PowerShell
+verify-installer.ps1
+```
+
+### 检查Windows系统架构
+```bash
+# 批处理脚本 (推荐)
+check-windows-arch.bat
+
+# 或使用PowerShell
+check-windows-arch.ps1
+```
+
 ## 📖 使用指南
 
 ### 首次使用
@@ -178,6 +208,158 @@ npm run build-mac
 - 点击通知会聚焦到应用程序窗口
 - 通知包含日程标题、时间和描述信息
 - 支持设置不同的提醒提前时间
+
+## 🪟 Windows应用程序使用指南
+
+### 安装说明
+
+#### 选项1：使用安装包（推荐）
+1. 下载 `Lawyer Calendar Setup 1.0.0.exe` 安装包
+2. 双击运行安装程序
+3. 按照安装向导完成安装
+4. 安装完成后，可在桌面或开始菜单找到应用程序图标
+
+#### 选项2：使用便携版（无需安装）
+
+**推荐版本（最高兼容性）：**
+- `LawyerCalendar-Minimal-1.0.0.zip` (最小化版本，231MB，推荐用于兼容性问题)
+- `LawyerCalendar-Portable-Windows-1.0.0.zip` (完整优化版本，106MB)
+
+**备选版本：**
+- `LawyerCalendar-Portable-Compatible-1.0.0.zip` (Python创建)
+- `LawyerCalendar-Portable-1.0.0.zip` (zip命令创建)
+- `Lawyer Calendar Portable 1.0.0.zip` (原始文件名，兼容性较低)
+- `LawyerCalendar-Portable-1.0.0.tar.gz` (需要7-Zip解压)
+
+**解压步骤：**
+1. 下载便携版压缩包
+2. 右键压缩文件 → 选择"全部提取"或"解压到当前文件夹"
+3. 确保解压到非系统文件夹（建议桌面或Documents文件夹）
+4. 双击解压后文件夹中的 `Lawyer Calendar.exe` 运行
+5. 无需安装，移动或删除文件夹即可卸载
+
+**解压助手：**
+运行 `extract-portable.bat` 获取详细的解压指导
+
+### 应用程序特性
+- **原生体验**: 完整的Windows原生应用体验
+- **系统通知**: 使用Windows原生通知系统
+- **任务栏集成**: 支持任务栏固定和跳转列表
+- **窗口管理**: 支持最小化到托盘、最大化和关闭操作
+- **数据安全**: 所有数据存储在本地，无需网络权限
+
+### 通知功能
+- 日程提醒会通过Windows操作中心显示
+- 点击通知会聚焦到应用程序窗口
+- 通知包含日程标题、时间和描述信息
+- 支持设置不同的提醒提前时间
+
+### 卸载程序
+- 通过Windows设置 > 应用 > 应用和功能卸载
+- 或使用安装目录下的uninstall.exe
+
+### 故障排除
+
+#### 安装失败："此应用无法在你的电脑上运行"
+这是最常见的架构兼容性错误，解决方案：
+
+**立即诊断**：
+```batch
+# 运行架构检测工具
+check-windows-arch.bat
+```
+或使用PowerShell：
+```powershell
+.\check-windows-arch.ps1
+```
+
+**解决方案**：
+1. **确认系统架构**：
+   - 右键"此电脑" → 属性 → 查看"系统类型"
+   - 如果显示"64位操作系统"，当前安装包兼容
+   - 如果显示"32位操作系统"，需要32位版本
+
+2. **使用便携版**：
+   - 下载 `Lawyer Calendar Portable 1.0.0.zip`
+   - 解压到任意文件夹
+   - 直接运行 `Lawyer Calendar.exe`
+
+3. **如果是32位系统**：
+   - 升级到64位Windows (推荐)
+   - 或联系开发者获取32位版本
+
+#### 安装失败："Installer integrity check has failed"
+如果遇到此错误，请尝试：
+1. **以管理员身份运行**：右键安装包，选择"以管理员身份运行"
+2. **关闭安全软件**：临时关闭杀毒软件或防火墙
+3. **检查磁盘空间**：确保有足够的磁盘空间（至少100MB）
+4. **验证安装包完整性**：
+   ```batch
+   verify-installer.bat
+   ```
+   或使用PowerShell：
+   ```powershell
+   .\verify-installer.ps1
+   ```
+
+#### 应用程序无法启动
+1. 确保您的Windows版本支持（Windows 10/11）
+2. 检查是否安装了所有必要的系统更新
+3. 以管理员身份运行应用程序
+
+#### ZIP文件解压失败或"压缩文件夹错误"
+
+**可能原因：**
+- 文件名含空格导致兼容性问题
+- ZIP文件格式不完全兼容
+- 安全软件阻止解压
+
+**解决方案：**
+
+1. **使用兼容版本（推荐）**：
+   - 下载 `LawyerCalendar-Portable-Compatible-1.0.0.zip` (Python创建，最高兼容性)
+
+2. **使用无空格文件名版本**：
+   - 下载 `LawyerCalendar-Portable-1.0.0.zip` 而不是 `Lawyer Calendar Portable 1.0.0.zip`
+
+2. **使用Windows内置解压**：
+   - 右键ZIP文件 → "全部提取"
+   - 选择解压目标文件夹（桌面或Documents）
+
+3. **如果仍失败，使用7-Zip**：
+   - 下载并安装 7-Zip (https://7-zip.org)
+   - 用7-Zip打开ZIP文件
+   - 选择"提取"并指定目标文件夹
+
+4. **使用TAR.GZ版本**：
+   - 下载 `LawyerCalendar-Portable-1.0.0.tar.gz`
+   - 使用7-Zip解压两次（先解压GZ，再解压TAR）
+
+5. **运行解压助手**：
+   - 下载 `extract-portable.bat`
+   - 与压缩包放在同一目录
+   - 运行批处理文件获取详细指导
+
+6. **使用最小化版本**：
+   - 下载 `LawyerCalendar-Minimal-1.0.0.zip`
+   - 这个版本只包含核心文件，兼容性最高
+   - 如果成功，再尝试完整版本
+
+7. **运行故障排除工具**：
+   - 下载 `troubleshoot-zip.bat`
+   - 运行它来诊断ZIP文件问题
+
+**解压位置建议：**
+- ✅ 桌面文件夹
+- ✅ Documents文件夹
+- ✅ 非系统盘的其他文件夹
+- ❌ C:\Program Files
+- ❌ 系统文件夹
+
+#### 通知功能不工作
+1. 确保在Windows设置中启用了通知
+2. 检查应用程序是否有通知权限
+3. 重启应用程序后重试
 
 ## 🤝 贡献
 
