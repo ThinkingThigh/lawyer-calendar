@@ -22,7 +22,7 @@ const router = useRouter()
 const users = ref([])
 const searchQuery = ref('')
 const dialogVisible = ref(false)
-const dialogTitle = ref('添加用户')
+const dialogTitle = ref('添加客户')
 const isEditMode = ref(false)
 
 // 表单数据
@@ -34,7 +34,7 @@ const formRules = {
   phone: [{ required: true, message: '请输入电话', trigger: 'blur' }]
 }
 
-// 过滤后的用户列表
+// 过滤后的客户列表
 const filteredUsers = computed(() => {
   if (!searchQuery.value) return users.value
 
@@ -45,48 +45,48 @@ const filteredUsers = computed(() => {
   )
 })
 
-// 加载用户数据
+// 加载客户数据
 const loadUsers = async () => {
   try {
     users.value = await userStorage.getAll()
   } catch (error) {
-    ElMessage.error('加载用户数据失败')
+    ElMessage.error('加载客户数据失败')
   }
 }
 
-// 添加用户
+// 添加客户
 const addUser = () => {
   resetForm()
-  dialogTitle.value = '添加用户'
+  dialogTitle.value = '添加客户'
   isEditMode.value = false
   dialogVisible.value = true
 }
 
-// 编辑用户
+// 编辑客户
 const editUser = (user) => {
   userForm.value = new User(user)
-  dialogTitle.value = '编辑用户'
+  dialogTitle.value = '编辑客户'
   isEditMode.value = true
   dialogVisible.value = true
 }
 
-// 查看用户详情
+// 查看客户详情
 const viewUser = (user) => {
-  router.push({ name: 'UserDetail', params: { id: user.id } })
+  router.push({ name: 'ClientDetail', params: { id: user.id } })
 }
 
-// 删除用户
+// 删除客户
 const deleteUser = async (user) => {
   try {
     await userStorage.delete(user.id)
-    ElMessage.success('用户删除成功')
+    ElMessage.success('客户删除成功')
     await loadUsers()
   } catch (error) {
-    ElMessage.error('删除用户失败')
+    ElMessage.error('删除客户失败')
   }
 }
 
-// 保存用户
+// 保存客户
 const saveUser = async () => {
   try {
     if (!userFormRef.value) return
@@ -95,10 +95,10 @@ const saveUser = async () => {
 
     if (isEditMode.value) {
       await userStorage.update(userForm.value.id, userForm.value)
-      ElMessage.success('用户更新成功')
+      ElMessage.success('客户更新成功')
     } else {
       await userStorage.add(userForm.value)
-      ElMessage.success('用户添加成功')
+      ElMessage.success('客户添加成功')
     }
 
     dialogVisible.value = false
@@ -132,13 +132,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="user-management">
-    <el-card class="user-card">
+  <div class="client-management">
+    <el-card class="client-card">
       <template #header>
         <div class="card-header">
-          <h2>用户管理</h2>
+          <h2>客户管理</h2>
           <el-button type="primary" @click="addUser">
-            添加用户
+            添加客户
           </el-button>
         </div>
       </template>
@@ -157,7 +157,7 @@ onMounted(() => {
         </el-input>
       </div>
 
-      <!-- 用户列表 -->
+      <!-- 客户列表 -->
       <el-table
         :data="filteredUsers"
         style="width: 100%"
@@ -204,7 +204,7 @@ onMounted(() => {
               编辑
             </el-button>
             <el-popconfirm
-              title="确定删除这个用户吗？"
+              title="确定删除这个客户吗？"
               @confirm="deleteUser(scope.row)"
             >
               <template #reference>
@@ -218,7 +218,7 @@ onMounted(() => {
       </el-table>
     </el-card>
 
-    <!-- 用户表单对话框 -->
+    <!-- 客户表单对话框 -->
     <el-dialog
       v-model="dialogVisible"
       :title="dialogTitle"
@@ -234,7 +234,7 @@ onMounted(() => {
         <el-form-item label="姓名" prop="name">
           <el-input
             v-model="userForm.name"
-            placeholder="请输入用户姓名"
+            placeholder="请输入客户姓名"
           />
         </el-form-item>
 
@@ -277,11 +277,11 @@ export default {
 </script>
 
 <style scoped>
-.user-management {
+.client-management {
   height: 100%;
 }
 
-.user-card {
+.client-card {
   height: 100%;
 }
 

@@ -22,36 +22,36 @@ const user = ref(null)
 const userSchedules = ref([])
 const loading = ref(true)
 
-// 加载用户数据
+// 加载客户数据
 const loadUserData = async () => {
   try {
     const userId = route.params.id
     user.value = await userStorage.getById(userId)
 
     if (!user.value) {
-      ElMessage.error('用户不存在')
-      router.push({ name: 'UserManagement' })
+      ElMessage.error('客户不存在')
+      router.push({ name: 'ClientManagement' })
       return
     }
 
     userSchedules.value = await scheduleStorage.getByUserId(userId)
   } catch (error) {
-    ElMessage.error('加载用户数据失败')
-    router.push({ name: 'UserManagement' })
+    ElMessage.error('加载客户数据失败')
+    router.push({ name: 'ClientManagement' })
   } finally {
     loading.value = false
   }
 }
 
-// 返回用户管理
+// 返回客户管理
 const goBack = () => {
-  router.push({ name: 'UserManagement' })
+  router.push({ name: 'ClientManagement' })
 }
 
-// 编辑用户
+// 编辑客户
 const editUser = () => {
   router.push({
-    name: 'UserManagement',
+    name: 'ClientManagement',
     query: { edit: user.value.id }
   })
 }
@@ -84,13 +84,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="user-detail">
-    <el-card v-loading="loading" class="user-info-card">
+  <div class="client-detail">
+    <el-card v-loading="loading" class="client-info-card">
       <template #header>
         <div class="card-header">
-          <h2>用户详情</h2>
+          <h2>客户详情</h2>
           <div class="header-actions">
-            <el-button @click="editUser">编辑用户</el-button>
+            <el-button @click="editUser">编辑客户</el-button>
             <el-button @click="goBack">返回列表</el-button>
           </div>
         </div>
@@ -201,7 +201,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.user-detail {
+.client-detail {
   height: 100%;
   overflow-y: auto;
 }

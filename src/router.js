@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CalendarView from './views/CalendarView.vue'
-import UserManagement from './views/UserManagement.vue'
+import ClientManagement from './views/ClientManagement.vue'
 import ScheduleManagement from './views/ScheduleManagement.vue'
-import UserDetail from './views/UserDetail.vue'
+import ClientDetail from './views/ClientDetail.vue'
 import Settings from './views/Settings.vue'
 
 const routes = [
@@ -13,13 +13,13 @@ const routes = [
   },
   {
     path: '/users',
-    name: 'UserManagement',
-    component: UserManagement
+    name: 'ClientManagement',
+    component: ClientManagement
   },
   {
     path: '/users/:id',
-    name: 'UserDetail',
-    component: UserDetail,
+    name: 'ClientDetail',
+    component: ClientDetail,
     props: true
   },
   {

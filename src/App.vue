@@ -20,7 +20,7 @@ const handleSelect = (key) => {
 
 const menuItems = [
   { key: 'Calendar', label: '日历', icon: Calendar },
-  { key: 'UserManagement', label: '用户管理', icon: User },
+  { key: 'ClientManagement', label: '客户管理', icon: User },
   { key: 'ScheduleManagement', label: '日程管理', icon: DocumentAdd },
   { key: 'Settings', label: '设置', icon: Setting }
 ]
