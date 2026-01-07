@@ -12,7 +12,7 @@ export default defineConfig({
     },
     // 设置明确的服务器配置
     host: 'localhost',
-    port: 5173,
+    port: 5174,
   },
   build: {
     outDir: 'dist',
