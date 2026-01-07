@@ -11,6 +11,10 @@ import { userStorage } from './services/storage.js'
 // 初始化默认数据
 const initDefaultData = async () => {
   try {
+    // 延迟导入userStore，避免循环依赖
+    const { useUserStore } = await import('./stores/userStore.js')
+    const userStore = useUserStore(pinia)
+
     const users = await userStorage.getAll()
     if (users.length === 0) {
       // 如果没有用户数据，创建一些默认用户
@@ -34,6 +38,10 @@ const initDefaultData = async () => {
       })
       console.log('已创建默认用户数据')
     }
+
+    // 初始化userStore数据
+    await userStore.fetchUsers()
+    console.log('📊 已初始化用户store数据')
   } catch (error) {
     console.error('初始化默认数据失败:', error)
   }
