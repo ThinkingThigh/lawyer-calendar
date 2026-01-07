@@ -1,5 +1,26 @@
-# Logs
-logs
+# =============================================
+# Vue.js + Electron 项目 .gitignore 配置
+# =============================================
+
+# 依赖包
+node_modules/
+
+# 构建输出目录
+dist/
+dist-electron/
+dist-ssr/
+build/
+release/
+
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 日志文件
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,19 +28,144 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-electron
-dist-ssr
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 缓存目录
+.npm
+.eslintcache
+.cache
+.parcel-cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# 测试覆盖率
+coverage/
+*.lcov
+.nyc_output
+test-results/
+playwright-report/
+test-output/
+
+# 打包文件
+*.tgz
+.yarn-integrity
+
+# Electron 特定文件
+app/dist/
+app/main.prod.js
+app/main.prod.js.map
+
+# 可执行文件和安装包
+*.exe
+*.msi
+*.dmg
+*.pkg
+*.deb
+*.snap
+*.appx
+
+# 压缩包
+*.zip
+*.7z
+*.rar
+
+# 临时文件
+tmp/
+temp/
+*.bak
+*.backup
+*.tmp
+*.temp
+
+# 本地开发文件
 *.local
 
-# Editor directories and files
+# =============================================
+# 编辑器和 IDE
+# =============================================
+
+# VS Code
 .vscode/*
 !.vscode/extensions.json
-.idea
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# IntelliJ IDEA
+.idea/
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =============================================
+# 操作系统文件
+# =============================================
+
+# macOS
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+
+# =============================================
+# 其他框架相关 (可选)
+# =============================================
+
+# Next.js
+.next/
+
+# Nuxt.js
+.nuxt/
+
+# Gatsby
+.cache/
+public/
+
+# Storybook
+.out/
+.storybook-out/
+storybook-static/
+
+# =============================================
+# 包管理器锁文件 (根据使用的包管理器取消注释)
+# =============================================
+# yarn.lock
+# pnpm-lock.yaml
