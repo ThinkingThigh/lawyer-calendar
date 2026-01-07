@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, User } from '../models/types.js'
 import { userStorage } from '../services/storage.js'
 import { useUserStore } from '../stores/userStore.js'
@@ -59,7 +59,6 @@ const emit = defineEmits(['update:visible', 'update:modelValue', 'save', 'delete
 // 使用Pinia store
 const userStore = useUserStore()
 
-console.log('🔧 ScheduleDialog组件初始化完成')
 
 const formRef = ref(null)
 
@@ -100,14 +99,10 @@ const clientFormRules = {
 
 // 用户选项 - 直接使用store的数据
 const userOptions = computed(() => {
-  console.log('🔄 userOptions重新计算')
-  console.log('👥 userStore.users数量:', userStore.users.length)
-
   const options = userStore.users.map(user => ({
     value: user.id,
     label: user.name
   }))
-  console.log('📝 生成的选项:', options.map(o => ({ value: o.value, label: o.label })))
 
   // 添加"新建客户"选项
   options.unshift({
@@ -115,7 +110,6 @@ const userOptions = computed(() => {
     label: '+ 新建客户'
   })
 
-  console.log('📋 最终选项数量:', options.length)
   return options
 })
 
@@ -137,6 +131,7 @@ watch(() => props.visible, async (visible) => {
     isSyncing.value = true
     await nextTick()
     formData.value = { ...props.modelValue }
+
     isSyncing.value = false
   } else {
     // 当对话框关闭时，重置表单数据
@@ -160,7 +155,6 @@ watch(() => props.visible, async (visible) => {
 // 监听表单数据变化，同步到父组件
 watch(() => formData.value, (newValue) => {
   if (props.visible && !isSyncing.value) {
-    console.log('📝 formData变化, userId:', newValue.userId)
     emit('update:modelValue', { ...newValue })
   }
 }, { deep: true })
@@ -296,7 +290,7 @@ const saveNewClient = async () => {
               type="datetime"
               placeholder="选择开始时间"
               format="YYYY-MM-DD HH:mm"
-              value-format="YYYY-MM-DDTHH:mm"
+              value-format="YYYY-MM-DD HH:mm"
             />
           </el-form-item>
         </el-col>
@@ -308,7 +302,7 @@ const saveNewClient = async () => {
               type="datetime"
               placeholder="选择结束时间"
               format="YYYY-MM-DD HH:mm"
-              value-format="YYYY-MM-DDTHH:mm"
+              value-format="YYYY-MM-DD HH:mm"
             />
           </el-form-item>
         </el-col>

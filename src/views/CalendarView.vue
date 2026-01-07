@@ -9,6 +9,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
 import zhCn from '@fullcalendar/core/locales/zh-cn'
+import dayjs from 'dayjs'
 import {
   ElButton,
   ElMessage,
@@ -105,12 +106,20 @@ const eventDidMount = (arg) => {
 // 处理日期点击
 const handleDateClick = (arg) => {
   resetForm()
-  scheduleForm.value.startTime = arg.dateStr + 'T09:00'
-  scheduleForm.value.endTime = arg.dateStr + 'T10:00'
+
+  // 设置默认值为当前时间和当前时间+30分钟
+  const now = dayjs()
+  scheduleForm.value.startTime = now.format('YYYY-MM-DD HH:mm')
+  scheduleForm.value.endTime = now.add(30, 'minute').format('YYYY-MM-DD HH:mm')
+
   dialogTitle.value = '添加日程'
   isEditMode.value = false
   dialogKey.value++ // 强制重新渲染对话框
-  dialogVisible.value = true
+
+  // 使用nextTick确保DOM更新后再设置visible
+  nextTick(() => {
+    dialogVisible.value = true
+  })
 }
 
 // 处理事件点击
@@ -249,12 +258,12 @@ onMounted(() => {
     <ScheduleDialog
       :key="dialogKey"
       :visible="dialogVisible"
+      :model-value="scheduleForm"
       @update:visible="dialogVisible = $event"
+      @update:model-value="scheduleForm = $event"
       :title="dialogTitle"
       :is-edit-mode="isEditMode"
       :users="users"
-      :model-value="scheduleForm"
-      @update:model-value="scheduleForm = $event"
       @save="handleSaveSchedule"
       @delete="handleDeleteSchedule"
     />

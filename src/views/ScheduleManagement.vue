@@ -5,6 +5,7 @@ import { scheduleStorage, userStorage } from '../services/storage.js'
 import { Schedule, STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
 import { Search } from '@element-plus/icons-vue'
+import dayjs from 'dayjs'
 import {
   ElCard,
   ElButton,
@@ -83,11 +84,25 @@ const loadData = async () => {
   }
 }
 
+// 重置表单
+const resetForm = () => {
+  console.log('🔄 resetForm被调用')
+  scheduleForm.value = new Schedule()
+  console.log('📝 重置后的scheduleForm:', scheduleForm.value)
+}
+
 // 添加日程
 const addSchedule = () => {
   resetForm()
+
+  // 设置默认值为当前时间和当前时间+30分钟
+  const now = dayjs()
+  scheduleForm.value.startTime = now.format('YYYY-MM-DD HH:mm')
+  scheduleForm.value.endTime = now.add(30, 'minute').format('YYYY-MM-DD HH:mm')
+
   dialogTitle.value = '添加日程'
   isEditMode.value = false
+  dialogKey.value++ // 强制重新渲染对话框
   dialogVisible.value = true
 }
 
