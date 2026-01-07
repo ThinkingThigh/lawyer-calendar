@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import router from './router.js'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
@@ -39,7 +40,9 @@ const initDefaultData = async () => {
 }
 
 const app = createApp(App)
+const pinia = createPinia()
 
+app.use(pinia)
 app.use(router)
 app.use(ElementPlus)
 

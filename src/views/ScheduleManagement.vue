@@ -1,5 +1,6 @@
 <script setup>
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { useUserStore } from '../stores/userStore.js'
 import { scheduleStorage, userStorage } from '../services/storage.js'
 import { Schedule, STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
@@ -18,8 +19,10 @@ import {
   ElCheckbox
 } from 'element-plus'
 
+// 使用Pinia store
+const userStore = useUserStore()
+
 const schedules = ref([])
-const users = ref([])
 const searchQuery = ref('')
 const selectedUserId = ref('')
 const userSearchQuery = ref('')
@@ -28,15 +31,18 @@ const dialogTitle = ref('添加日程')
 const isEditMode = ref(false)
 const selectedSchedules = ref([])
 
+// 对话框key，用于强制重新渲染
+const dialogKey = ref(0)
+
 // 表单数据
 const scheduleForm = ref(new Schedule())
 
 // 过滤后的用户列表
 const filteredUsers = computed(() => {
-  if (!userSearchQuery.value) return users.value
+  if (!userSearchQuery.value) return userStore.users
 
   const query = userSearchQuery.value.toLowerCase()
-  return users.value.filter(user =>
+  return userStore.users.filter(user =>
     user.name.toLowerCase().includes(query) ||
     user.phone.toLowerCase().includes(query)
   )
@@ -67,12 +73,11 @@ const filteredSchedules = computed(() => {
 // 加载数据
 const loadData = async () => {
   try {
-    const [scheduleData, userData] = await Promise.all([
-      scheduleStorage.getAll(),
-      userStorage.getAll()
-    ])
+    const scheduleData = await scheduleStorage.getAll()
     schedules.value = scheduleData
-    users.value = userData
+
+    // 从store加载用户数据
+    await userStore.fetchUsers()
   } catch (error) {
     ElMessage.error('加载数据失败')
   }
@@ -105,6 +110,19 @@ const handleDeleteSchedule = async (scheduleData) => {
   } catch (error) {
     ElMessage.error('删除日程失败')
   }
+}
+
+// 处理新客户创建
+const handleClientCreated = async (newClient) => {
+  console.log('👨‍👩‍👧‍👦 父组件收到新客户:', newClient)
+
+  // 通过store添加用户（这会自动更新store中的users）
+  await userStore.addUser(newClient)
+
+  // 强制重新渲染对话框
+  dialogKey.value++
+
+  console.log('🔑 对话框key:', dialogKey.value)
 }
 
 // 批量删除
@@ -146,7 +164,7 @@ const handleSaveSchedule = async (scheduleData) => {
 // 获取用户姓名
 const getUserName = (userId) => {
   if (!userId) return '-'
-  const user = users.value.find(u => u.id === userId)
+  const user = userStore.users.find(u => u.id === userId)
   return user ? user.name : '未知用户'
 }
 
@@ -184,8 +202,35 @@ const clearSearch = () => {
   userSearchQuery.value = ''
 }
 
-onMounted(() => {
-  loadData()
+// 提供给子组件调用的方法
+const addNewClient = (newClient) => {
+  console.log('🔗 通过provide调用addNewClient:', newClient)
+  handleClientCreated(newClient)
+}
+
+// 使用Pinia store管理用户数据
+
+// 监听自定义事件
+if (typeof window !== 'undefined') {
+  const handleCustomEvent = (event) => {
+    console.log('🎧 收到自定义事件:', event.detail)
+    handleClientCreated(event.detail)
+  }
+
+  window.addEventListener('schedule-dialog-client-created', handleCustomEvent)
+
+  // 在组件卸载时移除监听器
+  onUnmounted(() => {
+    window.removeEventListener('schedule-dialog-client-created', handleCustomEvent)
+  })
+}
+
+// 在mounted时加载数据
+onMounted(async () => {
+  console.log('🚀 ScheduleManagement组件已挂载')
+
+  await loadData()
+  console.log('📊 初始用户数量:', userStore.users.length)
 })
 </script>
 
@@ -328,11 +373,12 @@ onMounted(() => {
 
     <!-- 日程对话框组件 -->
     <ScheduleDialog
+      :key="dialogKey"
       :visible="dialogVisible"
       @update:visible="dialogVisible = $event"
       :title="dialogTitle"
       :is-edit-mode="isEditMode"
-      :users="users"
+      :users="userStore.users"
       :model-value="scheduleForm"
       @update:model-value="scheduleForm = $event"
       @save="handleSaveSchedule"
