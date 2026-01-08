@@ -49,29 +49,76 @@ const loadData = async () => {
 
 // 获取日历事件
 const calendarEvents = computed(() => {
-  return schedules.value.map(schedule => ({
-    id: schedule.id,
-    title: schedule.title,
-    start: schedule.startTime,
-    end: schedule.endTime,
-    extendedProps: {
-      description: schedule.description,
-      userId: schedule.userId,
-      location: schedule.location,
-      priority: schedule.priority,
-      status: schedule.status,
-      reminder: schedule.reminder
-    },
-    backgroundColor: getEventColor(schedule.priority, schedule.status),
-    borderColor: getEventColor(schedule.priority, schedule.status)
-  }))
+  return schedules.value.map(schedule => {
+    const eventColor = getEventColor(schedule.priority, schedule.status)
+    return {
+      id: schedule.id,
+      title: schedule.title,
+      start: schedule.startTime,
+      end: schedule.endTime,
+      extendedProps: {
+        description: schedule.description,
+        userId: schedule.userId,
+        location: schedule.location,
+        priority: schedule.priority,
+        status: schedule.status,
+        reminder: schedule.reminder
+      },
+      backgroundColor: eventColor,
+      borderColor: eventColor,
+      textColor: '#ffffff',
+      display: getEventDisplay(schedule),
+      classNames: [`priority-${schedule.priority}`, `status-${schedule.status}`]
+    }
+  })
 })
+
+// 根据日程属性决定显示方式
+const getEventDisplay = (schedule) => {
+  // 全天事件或持续时间超过8小时的事件使用block显示
+  const start = dayjs(schedule.startTime)
+  const end = dayjs(schedule.endTime)
+  const duration = end.diff(start, 'hour')
+
+  if (duration >= 8) {
+    return 'block'
+  }
+
+  return 'auto'
+}
 
 // 根据优先级和状态获取事件颜色
 const getEventColor = (priority, status) => {
-  const priorityColor = PRIORITY_OPTIONS.find(p => p.value === priority)?.color || '#409EFF'
-  const statusColor = STATUS_OPTIONS.find(s => s.value === status)?.color || '#409EFF'
-  return priorityColor
+  // 优先使用优先级颜色，如果是高优先级则使用对应的颜色
+  if (priority === 'high') {
+    return '#F56C6C' // 红色
+  } else if (priority === 'medium') {
+    return '#E6A23C' // 橙色
+  } else if (priority === 'low') {
+    return '#67C23A' // 绿色
+  }
+
+  // 如果没有优先级信息，使用状态颜色
+  const statusColor = STATUS_OPTIONS.find(s => s.value === status)?.color
+  if (statusColor) {
+    return statusColor
+  }
+
+  return '#409EFF' // 默认蓝色
+}
+
+// 智能截断文本
+const truncateText = (text, maxLength) => {
+  if (!text || text.length <= maxLength) return text
+  return text.substring(0, maxLength - 1) + '...'
+}
+
+// 获取合适的标题长度
+const getOptimalTitleLength = (elementWidth) => {
+  // 根据元素宽度估算合适的字符数
+  const charWidth = 12 // 平均字符宽度
+  const availableChars = Math.floor(elementWidth / charWidth) - 5 // 预留一些空间
+  return Math.max(availableChars, 8) // 最少8个字符
 }
 
 // 格式化事件显示
@@ -87,19 +134,65 @@ const eventDidMount = (arg) => {
   const contentDiv = document.createElement('div')
   contentDiv.className = 'event-content'
 
+  // 创建标题容器
+  const titleContainer = document.createElement('div')
+  titleContainer.className = 'event-title-container'
+
+  // 计算合适的标题长度
+  const elementWidth = eventEl.offsetWidth || 120 // 默认宽度
+  const optimalLength = getOptimalTitleLength(elementWidth)
+  const displayTitle = truncateText(event.title, optimalLength)
+
   const titleDiv = document.createElement('div')
   titleDiv.className = 'event-title'
-  titleDiv.textContent = event.title
-  contentDiv.appendChild(titleDiv)
+  titleDiv.textContent = displayTitle
+  titleDiv.title = event.title // 显示完整标题的tooltip
+  titleContainer.appendChild(titleDiv)
 
-  // 在时间网格视图中，只显示标题以节省空间
-  if (view.type !== 'timeGridWeek' && view.type !== 'timeGridDay' && event.extendedProps.location) {
-    const locationDiv = document.createElement('div')
-    locationDiv.className = 'event-location'
-    locationDiv.textContent = event.extendedProps.location
-    contentDiv.appendChild(locationDiv)
+  // 根据视图类型显示不同信息
+  if (view.type === 'dayGridMonth') {
+    // 月视图：显示标题和时间
+    const timeDiv = document.createElement('div')
+    timeDiv.className = 'event-time'
+    const startTime = dayjs(event.start).format('HH:mm')
+    timeDiv.textContent = startTime
+    titleContainer.appendChild(timeDiv)
+  } else if (view.type === 'timeGridWeek' || view.type === 'timeGridDay') {
+    // 周视图和日视图：显示标题和地点（如果有）
+    if (event.extendedProps.location) {
+      const locationDiv = document.createElement('div')
+      locationDiv.className = 'event-location'
+      locationDiv.textContent = truncateText(event.extendedProps.location, 15)
+      locationDiv.title = event.extendedProps.location // 显示完整地点的tooltip
+      contentDiv.appendChild(locationDiv)
+    }
+  } else if (view.type === 'listWeek') {
+    // 列表视图：显示完整信息
+    const detailsDiv = document.createElement('div')
+    detailsDiv.className = 'event-details'
+
+    if (event.extendedProps.location) {
+      const locationDiv = document.createElement('span')
+      locationDiv.className = 'event-location'
+      locationDiv.textContent = `地点：${truncateText(event.extendedProps.location, 20)}`
+      locationDiv.title = event.extendedProps.location
+      detailsDiv.appendChild(locationDiv)
+    }
+
+    if (event.extendedProps.description) {
+      const descDiv = document.createElement('span')
+      descDiv.className = 'event-description'
+      descDiv.textContent = event.extendedProps.description.length > 50
+        ? event.extendedProps.description.substring(0, 50) + '...'
+        : event.extendedProps.description
+      descDiv.title = event.extendedProps.description
+      detailsDiv.appendChild(descDiv)
+    }
+
+    contentDiv.appendChild(detailsDiv)
   }
 
+  contentDiv.appendChild(titleContainer)
   eventEl.appendChild(contentDiv)
 }
 
@@ -203,6 +296,22 @@ const handleDeleteSchedule = async (scheduleData) => {
   }
 }
 
+// 处理事件鼠标悬停
+const handleEventMouseEnter = (arg) => {
+  const eventEl = arg.el
+  eventEl.style.transform = 'scale(1.02)'
+  eventEl.style.zIndex = '10'
+  eventEl.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)'
+}
+
+// 处理事件鼠标离开
+const handleEventMouseLeave = (arg) => {
+  const eventEl = arg.el
+  eventEl.style.transform = 'scale(1)'
+  eventEl.style.zIndex = 'auto'
+  eventEl.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
+}
+
 // 获取优先级标签
 const getPriorityTag = (priority) => {
   const option = PRIORITY_OPTIONS.find(p => p.value === priority)
@@ -248,8 +357,46 @@ onMounted(() => {
           eventClick: handleEventClick,
           eventDidMount: eventDidMount,
           height: 'calc(100vh - 200px)',
-          dayMaxEvents: 3,
-          moreLinkClick: 'popover'
+          dayMaxEvents: 6,
+          moreLinkClick: 'popover',
+          eventDisplay: 'auto',
+          eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          },
+          views: {
+            dayGridMonth: {
+              dayMaxEvents: 6,
+              moreLinkClick: 'popover',
+              eventDisplay: 'block'
+            },
+            timeGridWeek: {
+              nowIndicator: true,
+              scrollTime: '08:00:00',
+              slotDuration: '00:30:00',
+              slotLabelFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              }
+            },
+            timeGridDay: {
+              nowIndicator: true,
+              scrollTime: '08:00:00',
+              slotDuration: '00:15:00',
+              slotLabelFormat: {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              }
+            },
+            listWeek: {
+              listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' }
+            }
+          },
+          eventMouseEnter: handleEventMouseEnter,
+          eventMouseLeave: handleEventMouseLeave
         }"
       />
     </el-card>
@@ -292,19 +439,56 @@ onMounted(() => {
 
 .event-content {
   font-size: 12px;
-  line-height: 1.2;
+  line-height: 1.3;
+  width: 100%;
+  padding: 2px 4px;
+}
+
+.event-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px;
 }
 
 .event-title {
   font-weight: 500;
+  flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.event-time {
+  font-size: 10px;
+  color: #606266;
+  font-weight: 400;
+  flex-shrink: 0;
+}
+
 .event-location {
   color: #909399;
   font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.event-details {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #909399;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-description {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dialog-footer {
@@ -313,37 +497,229 @@ onMounted(() => {
   gap: 10px;
 }
 
-/* FullCalendar 弹出框样式优化 */
-:deep(.fc-popover) {
-  max-height: 300px;
-  overflow-y: auto;
+/* FullCalendar 事件样式优化 */
+:deep(.fc-event) {
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-:deep(.fc-popover-body) {
-  max-height: 250px;
-  overflow-y: auto;
+:deep(.fc-event:focus) {
+  outline: 2px solid #409EFF;
+  outline-offset: 2px;
 }
 
-/* 确保事件列表可滚动 */
-:deep(.fc-daygrid-more-popup) {
-  max-height: 200px;
-  overflow-y: auto;
+:deep(.fc-daygrid-event) {
+  margin: 2px 1px;
+  padding: 0;
+  min-height: 22px;
+  border-radius: 4px;
+}
+
+:deep(.fc-daygrid-event:hover) {
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* 月视图事件样式 */
+:deep(.fc-daygrid-day-events) {
+  margin: 2px 0;
+}
+
+:deep(.fc-daygrid-event .fc-event-main) {
+  padding: 0;
 }
 
 /* 时间网格视图中的事件样式优化 */
 :deep(.fc-timegrid-event) {
-  font-size: 11px;
+  border-radius: 3px;
+  margin: 1px 2px;
 }
 
 :deep(.fc-timegrid-event .event-content) {
-  padding: 2px 4px;
+  padding: 2px 6px;
 }
 
 :deep(.fc-timegrid-event .event-title) {
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.2;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+/* 列表视图样式优化 */
+:deep(.fc-list-event) {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+:deep(.fc-list-event:hover) {
+  background-color: #f8f9fa;
+}
+
+:deep(.fc-list-event .event-content) {
+  margin-left: 8px;
+}
+
+:deep(.fc-list-event .event-details) {
+  margin-top: 6px;
+  padding-left: 8px;
+  border-left: 3px solid #e4e7ed;
+  background-color: #fafbfc;
+  padding: 4px 8px;
+  border-radius: 3px;
+}
+
+/* 优先级指示器 */
+:deep(.fc-event[data-priority="high"]) {
+  border-left: 3px solid #F56C6C;
+}
+
+:deep(.fc-event[data-priority="medium"]) {
+  border-left: 3px solid #E6A23C;
+}
+
+:deep(.fc-event[data-priority="low"]) {
+  border-left: 3px solid #67C23A;
+}
+
+/* 状态指示器样式 */
+:deep(.fc-event[data-status="completed"]) {
+  opacity: 0.7;
+  text-decoration: line-through;
+}
+
+:deep(.fc-event[data-status="cancelled"]) {
+  opacity: 0.5;
+  background-color: #909399 !important;
+}
+
+/* FullCalendar 弹出框样式优化 */
+:deep(.fc-popover) {
+  max-height: 400px;
+  overflow-y: auto;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.fc-popover-body) {
+  max-height: 350px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+:deep(.fc-popover .fc-event) {
+  margin: 2px 0;
+  padding: 4px 8px;
+}
+
+/* 确保事件列表可滚动 */
+:deep(.fc-daygrid-more-popup) {
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* 响应式优化 */
+@media (max-width: 1200px) {
+  /* 平板样式 */
+  :deep(.fc-header-toolbar) {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  :deep(.fc-toolbar-chunk) {
+    display: flex;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 手机样式 */
+  :deep(.fc-daygrid-event) {
+    min-height: 24px;
+    margin: 1px 0;
+  }
+
+  .event-content {
+    font-size: 11px;
+    padding: 1px 3px;
+  }
+
+  .event-title {
+    font-size: 11px;
+  }
+
+  .event-time {
+    font-size: 9px;
+  }
+
+  .event-location {
+    font-size: 10px;
+  }
+
+  :deep(.fc-timegrid-event .event-title) {
+    font-size: 11px;
+  }
+
+  :deep(.fc-timegrid-event .event-content) {
+    padding: 1px 4px;
+  }
+
+  /* 列表视图在小屏幕上的优化 */
+  :deep(.fc-list-event) {
+    padding: 6px 8px;
+  }
+
+  :deep(.fc-list-event .event-content) {
+    margin-left: 4px;
+  }
+
+  /* 弹出框在小屏幕上的优化 */
+  :deep(.fc-popover) {
+    max-height: 300px;
+    max-width: 280px;
+  }
+
+  :deep(.fc-popover-body) {
+    max-height: 250px;
+    padding: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 小手机样式 */
+  :deep(.fc-daygrid-event) {
+    min-height: 20px;
+  }
+
+  .event-content {
+    font-size: 10px;
+    padding: 1px 2px;
+  }
+
+  .event-title {
+    font-size: 10px;
+  }
+
+  .event-time {
+    font-size: 8px;
+  }
+
+  /* 隐藏次要信息以节省空间 */
+  .event-location {
+    display: none;
+  }
+
+  /* 工具栏优化 */
+  :deep(.fc-button) {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  :deep(.fc-button-group .fc-button) {
+    margin: 0;
+  }
 }
 </style>
