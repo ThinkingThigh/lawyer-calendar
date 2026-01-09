@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { userStorage } from '../services/storage.js'
-import { User } from '../models/types.js'
+import { User, CUSTOMER_TYPE_OPTIONS } from '../models/types.js'
 import {
   ElCard,
   ElButton,
@@ -21,6 +21,7 @@ import {
 const router = useRouter()
 const users = ref([])
 const searchQuery = ref('')
+const customerTypeFilter = ref('')
 const dialogVisible = ref(false)
 const dialogTitle = ref('添加客户')
 const isEditMode = ref(false)
@@ -36,13 +37,28 @@ const formRules = {
 
 // 过滤后的客户列表
 const filteredUsers = computed(() => {
-  if (!searchQuery.value) return users.value
+  let filtered = users.value
 
-  const query = searchQuery.value.toLowerCase()
-  return users.value.filter(user =>
-    user.name.toLowerCase().includes(query) ||
-    user.phone.toLowerCase().includes(query)
-  )
+  // 按客户类型筛选
+  if (customerTypeFilter.value) {
+    filtered = filtered.filter(user => {
+      if (customerTypeFilter.value === 'custom') {
+        return user.customerType === 'custom' && user.customCustomerType
+      }
+      return user.customerType === customerTypeFilter.value
+    })
+  }
+
+  // 按搜索关键词筛选
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(user =>
+      user.name.toLowerCase().includes(query) ||
+      user.phone.toLowerCase().includes(query)
+    )
+  }
+
+  return filtered
 })
 
 // 加载客户数据
@@ -126,6 +142,14 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('zh-CN')
 }
 
+// 获取客户类型标签
+const getCustomerTypeLabel = (user) => {
+  if (user.customerType === 'custom') {
+    return user.customCustomerType || '自定义'
+  }
+  return user.customerType || '常法'
+}
+
 onMounted(() => {
   loadUsers()
 })
@@ -149,12 +173,25 @@ onMounted(() => {
           v-model="searchQuery"
           placeholder="搜索姓名或电话"
           clearable
-          style="width: 300px"
+          style="width: 300px; margin-right: 20px"
         >
           <template #prefix>
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
+        <el-select
+          v-model="customerTypeFilter"
+          placeholder="筛选客户类型"
+          clearable
+          style="width: 150px"
+        >
+          <el-option
+            v-for="option in CUSTOMER_TYPE_OPTIONS"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
       </div>
 
       <!-- 客户列表 -->
@@ -173,6 +210,12 @@ onMounted(() => {
         <el-table-column prop="phone" label="电话" width="150">
           <template #default="scope">
             {{ scope.row.phone }}
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="customerType" label="客户类型" width="120">
+          <template #default="scope">
+            <el-tag size="small">{{ getCustomerTypeLabel(scope.row) }}</el-tag>
           </template>
         </el-table-column>
 
@@ -242,6 +285,27 @@ onMounted(() => {
           <el-input
             v-model="userForm.phone"
             placeholder="请输入联系电话"
+          />
+        </el-form-item>
+
+        <el-form-item label="客户类型">
+          <el-select
+            v-model="userForm.customerType"
+            placeholder="选择客户类型"
+          >
+            <el-option
+              v-for="option in CUSTOMER_TYPE_OPTIONS"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item v-if="userForm.customerType === 'custom'" label="自定义类型">
+          <el-input
+            v-model="userForm.customCustomerType"
+            placeholder="请输入自定义客户类型"
           />
         </el-form-item>
 

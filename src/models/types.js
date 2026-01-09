@@ -5,6 +5,8 @@ export class User {
     this.name = data.name || ''
     this.phone = data.phone || ''
     this.notes = data.notes || ''
+    this.customerType = data.customerType || '常法' // 客户类型：常法/单案/非诉/其他/自定义
+    this.customCustomerType = data.customCustomerType || '' // 自定义客户类型名称
     this.createdAt = data.createdAt || new Date().toISOString()
     this.updatedAt = data.updatedAt || new Date().toISOString()
   }
@@ -97,4 +99,13 @@ export const EVENT_TYPE_OPTIONS = [
   { value: 'document', label: '代书', color: '#9370DB' }, // 中紫色
   { value: 'visit', label: '会见', color: '#FFA500' }, // 橙色
   { value: 'custom', label: '自定义', color: '#708090' } // 深灰色
+]
+
+// 客户类型选项
+export const CUSTOMER_TYPE_OPTIONS = [
+  { value: '常法', label: '常法' },
+  { value: '单案', label: '单案' },
+  { value: '非诉', label: '非诉' },
+  { value: '其他', label: '其他' },
+  { value: 'custom', label: '自定义' }
 ]
