@@ -19,6 +19,8 @@ export class Schedule {
     this.startTime = data.startTime || ''
     this.endTime = data.endTime || ''
     this.durationType = data.durationType || 'range' // point/range/allday
+    this.eventType = data.eventType || 'court' // 事件类型：预定义类型或custom
+    this.customEventType = data.customEventType || '' // 自定义事件类型名称
     this.userId = data.userId || null
     this.location = data.location || ''
     this.priority = data.priority || 'medium' // low/medium/high
@@ -71,4 +73,15 @@ export const DURATION_TYPE_OPTIONS = [
   { value: 'point', label: '时间点' },
   { value: 'range', label: '时间段' },
   { value: 'allday', label: '全天' }
+]
+
+// 事件类型选项
+export const EVENT_TYPE_OPTIONS = [
+  { value: 'court', label: '开庭', color: '#DC143C' }, // 深红色
+  { value: 'meeting', label: '会议', color: '#4169E1' }, // 皇家蓝
+  { value: 'training', label: '培训', color: '#32CD32' }, // 绿色
+  { value: 'consultation', label: '接谈', color: '#FF6347' }, // 番茄红
+  { value: 'document', label: '代书', color: '#9370DB' }, // 中紫色
+  { value: 'visit', label: '会见', color: '#FFA500' }, // 橙色
+  { value: 'custom', label: '自定义', color: '#708090' } // 深灰色
 ]

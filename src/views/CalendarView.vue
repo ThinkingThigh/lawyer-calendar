@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { scheduleStorage, settingsStorage, userStorage } from '../services/storage.js'
-import { STATUS_OPTIONS, PRIORITY_OPTIONS, Schedule } from '../models/types.js'
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, EVENT_TYPE_OPTIONS, Schedule } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
@@ -50,7 +50,7 @@ const loadData = async () => {
 // 获取日历事件
 const calendarEvents = computed(() => {
   return schedules.value.map(schedule => {
-    const eventColor = getEventColor(schedule.priority, schedule.status)
+    const eventColor = getEventColor(schedule.eventType, schedule.customEventType, schedule.priority, schedule.status)
 
     let eventConfig = {
       id: schedule.id,
@@ -62,13 +62,15 @@ const calendarEvents = computed(() => {
         priority: schedule.priority,
         status: schedule.status,
         reminder: schedule.reminder,
-        durationType: schedule.durationType
+        durationType: schedule.durationType,
+        eventType: schedule.eventType,
+        customEventType: schedule.customEventType
       },
       backgroundColor: eventColor,
       borderColor: eventColor,
       textColor: '#ffffff',
       display: getEventDisplay(schedule),
-      classNames: [`priority-${schedule.priority}`, `status-${schedule.status}`, `duration-${schedule.durationType}`]
+      classNames: [`priority-${schedule.priority}`, `status-${schedule.status}`, `duration-${schedule.durationType}`, `event-type-${schedule.eventType}`]
     }
 
     // 根据时间类型设置不同的时间属性
@@ -114,9 +116,15 @@ const getEventDisplay = (schedule) => {
   return 'auto'
 }
 
-// 根据优先级和状态获取事件颜色
-const getEventColor = (priority, status) => {
-  // 优先使用优先级颜色，如果是高优先级则使用对应的颜色
+// 根据事件类型、优先级和状态获取事件颜色
+const getEventColor = (eventType, customEventType, priority, status) => {
+  // 优先使用事件类型颜色
+  const eventTypeOption = EVENT_TYPE_OPTIONS.find(et => et.value === eventType)
+  if (eventTypeOption) {
+    return eventTypeOption.color
+  }
+
+  // 如果没有事件类型信息，使用优先级颜色
   if (priority === 'high') {
     return '#F56C6C' // 红色
   } else if (priority === 'medium') {
@@ -281,6 +289,8 @@ const handleEventClick = async (arg) => {
       startTime: schedule.startTime,
       endTime: schedule.endTime,
       durationType: schedule.durationType || 'range', // 确保有默认值
+      eventType: schedule.eventType || 'court', // 确保有默认值
+      customEventType: schedule.customEventType || '', // 自定义事件类型
       userId: schedule.userId,
       location: schedule.location,
       priority: schedule.priority,
@@ -306,6 +316,8 @@ const resetForm = () => {
     startTime: '',
     endTime: '',
     durationType: 'range',
+    eventType: 'court',
+    customEventType: '',
     userId: null,
     location: '',
     priority: 'medium',

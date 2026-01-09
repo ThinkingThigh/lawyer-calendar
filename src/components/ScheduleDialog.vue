@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { STATUS_OPTIONS, PRIORITY_OPTIONS, DURATION_TYPE_OPTIONS, User } from '../models/types.js'
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, DURATION_TYPE_OPTIONS, EVENT_TYPE_OPTIONS, User } from '../models/types.js'
 import { userStorage } from '../services/storage.js'
 import { useUserStore } from '../stores/userStore.js'
 import {
@@ -72,6 +72,8 @@ const formData = ref({
   startTime: '',
   endTime: '',
   durationType: 'range',
+  eventType: 'court',
+  customEventType: '',
   userId: null,
   location: '',
   priority: 'medium',
@@ -101,6 +103,11 @@ const formRules = computed(() => {
     rules.endTime = [{ required: true, message: '请选择结束时间', trigger: 'change' }]
   } else if (formData.value.durationType === 'allday') {
     rules.startTime = [{ required: true, message: '请选择日期', trigger: 'change' }]
+  }
+
+  // 自定义事件类型的验证
+  if (formData.value.eventType === 'custom') {
+    rules.customEventType = [{ required: true, message: '请输入自定义事件类型', trigger: 'blur' }]
   }
 
   return rules
@@ -158,6 +165,8 @@ watch(() => props.visible, async (visible) => {
       startTime: '',
       endTime: '',
       durationType: 'range',
+      eventType: 'court',
+      customEventType: '',
       userId: null,
       location: '',
       priority: 'medium',
@@ -310,6 +319,38 @@ const saveNewClient = async () => {
                 {{ option.label }}
               </el-radio>
             </el-radio-group>
+          </el-form-item>
+        </el-col>
+
+        <el-col :span="12">
+          <el-form-item label="事件类型">
+            <el-select v-model="formData.eventType" placeholder="选择事件类型">
+              <el-option
+                v-for="option in EVENT_TYPE_OPTIONS"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              >
+                <div style="display: flex; align-items: center;">
+                  <div
+                    :style="{ backgroundColor: option.color, width: '12px', height: '12px', borderRadius: '50%', marginRight: '8px' }"
+                  ></div>
+                  {{ option.label }}
+                </div>
+              </el-option>
+            </el-select>
+          </el-form-item>
+        </el-col>
+
+        <!-- 自定义事件类型输入框 -->
+        <el-col v-if="formData.eventType === 'custom'" :span="12">
+          <el-form-item label="自定义类型" prop="customEventType">
+            <el-input
+              v-model="formData.customEventType"
+              placeholder="请输入自定义事件类型"
+              maxlength="20"
+              show-word-limit
+            />
           </el-form-item>
         </el-col>
 
