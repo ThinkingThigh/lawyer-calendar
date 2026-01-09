@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useUserStore } from '../stores/userStore.js'
-import { scheduleStorage, userStorage } from '../services/storage.js'
+import { scheduleStorage, userStorage, locationStorage } from '../services/storage.js'
 import { Schedule, STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
 import { Search } from '@element-plus/icons-vue'
@@ -24,6 +24,7 @@ import {
 const userStore = useUserStore()
 
 const schedules = ref([])
+const locations = ref([])
 const searchQuery = ref('')
 const selectedUserId = ref('')
 const userSearchQuery = ref('')
@@ -74,8 +75,12 @@ const filteredSchedules = computed(() => {
 // 加载数据
 const loadData = async () => {
   try {
-    const scheduleData = await scheduleStorage.getAll()
+    const [scheduleData, locationData] = await Promise.all([
+      scheduleStorage.getAll(),
+      locationStorage.getAll()
+    ])
     schedules.value = scheduleData
+    locations.value = locationData
 
     // 从store加载用户数据
     await userStore.fetchUsers()
@@ -192,7 +197,18 @@ const getPriorityTag = (priority) => {
 // 获取状态标签
 const getStatusTag = (status) => {
   const option = STATUS_OPTIONS.find(s => s.value === status)
-  return option ? { text: option.label, color: option.color } : { text: status, color: '#409EFF' }
+  return option ? { text: option.label, color: option.color } : { text: status, color: '#409EFF'   }
+}
+
+// 获取地点名称
+const getLocationName = (schedule) => {
+  // 如果有locationId，优先使用ID查找地点名称
+  if (schedule.locationId) {
+    const location = locations.value.find(loc => loc.id === schedule.locationId)
+    return location ? location.name : schedule.location || ''
+  }
+  // 如果没有locationId，使用location字段（向后兼容）
+  return schedule.location || ''
 }
 
 // 格式化日期时间
@@ -343,7 +359,7 @@ onMounted(async () => {
 
         <el-table-column prop="location" label="地点" width="120">
           <template #default="scope">
-            {{ scope.row.location || '-' }}
+            {{ getLocationName(scope.row) || '-' }}
           </template>
         </el-table-column>
 

@@ -29,7 +29,7 @@ const locationFormRef = ref(null)
 
 const formRules = {
   name: [{ required: true, message: '请输入地点名称', trigger: 'blur' }],
-  address: [{ required: true, message: '请输入地址', trigger: 'blur' }]
+  address: [{ required: false, message: '请输入地址', trigger: 'blur' }]
 }
 
 // 过滤后的地点列表

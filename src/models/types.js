@@ -35,6 +35,7 @@ export class Schedule {
     this.customEventType = data.customEventType || '' // 自定义事件类型名称
     this.userId = data.userId || null
     this.location = data.location || ''
+    this.locationId = data.locationId || null // 关联地点ID，用于自动更新地点名称
     this.priority = data.priority || 'medium' // low/medium/high
     this.status = data.status || 'pending' // pending/in-progress/completed
     this.reminder = data.reminder || 0 // 分钟数

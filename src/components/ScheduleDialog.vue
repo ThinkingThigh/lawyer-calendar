@@ -76,6 +76,7 @@ const formData = ref({
   customEventType: '',
   userId: null,
   location: '',
+  locationId: null,
   priority: 'medium',
   status: 'pending',
   reminder: 0
@@ -130,7 +131,7 @@ const clientFormRules = {
 
 const locationFormRules = {
   name: [{ required: true, message: '请输入地点名称', trigger: 'blur' }],
-  address: [{ required: true, message: '请输入地址', trigger: 'blur' }]
+  address: [{ required: false, message: '请输入地址', trigger: 'blur' }]
 }
 
 // 用户选项 - 直接使用store的数据
@@ -163,10 +164,10 @@ const locationOptionsComputed = computed(() => {
     label: '+ 新建地点'
   })
 
-  // 添加"手动输入"选项
+  // 添加"搜索地点"选项
   options.unshift({
     value: '__manual_input__',
-    label: '手动输入地点'
+    label: '搜索地点'
   })
 
   return options
@@ -206,8 +207,12 @@ watch(() => props.visible, async (visible) => {
     await nextTick()
     formData.value = { ...props.modelValue }
 
-    // 根据location设置selectedLocationId
-    if (formData.value.location) {
+    // 根据locationId或location设置selectedLocationId
+    if (formData.value.locationId) {
+      // 如果有locationId，优先使用ID匹配
+      selectedLocationId.value = formData.value.locationId
+    } else if (formData.value.location) {
+      // 如果只有location名称，尝试匹配现有地点
       const matchedLocation = locationOptions.value.find(loc => loc.name === formData.value.location)
       selectedLocationId.value = matchedLocation ? matchedLocation.id : '__manual_input__'
     } else {
@@ -229,6 +234,7 @@ watch(() => props.visible, async (visible) => {
       customEventType: '',
       userId: null,
       location: '',
+      locationId: null,
       priority: 'medium',
       status: 'pending',
       reminder: 0
@@ -305,15 +311,17 @@ const handleLocationChange = (value) => {
     openLocationCreationDialog()
     console.log('📂 打开新建地点对话框')
   } else if (value === '__manual_input__') {
-    console.log('✏️ 用户选择手动输入地点')
-    // 重置选择，允许手动输入
+    console.log('🔍 用户选择搜索地点')
+    // 重置选择，允许手动输入，清空地点ID
     formData.value.location = ''
+    formData.value.locationId = null
   } else if (value) {
     // 选择现有地点
     const selectedLocation = locationOptions.value.find(loc => loc.id === value)
     if (selectedLocation) {
       formData.value.location = selectedLocation.name
-      console.log('📍 选择现有地点:', selectedLocation.name)
+      formData.value.locationId = selectedLocation.id
+      console.log('📍 选择现有地点:', selectedLocation.name, 'ID:', selectedLocation.id)
     }
   }
 }

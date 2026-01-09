@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
-import { scheduleStorage, settingsStorage, userStorage } from '../services/storage.js'
+import { scheduleStorage, settingsStorage, userStorage, locationStorage } from '../services/storage.js'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, EVENT_TYPE_OPTIONS, Schedule } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
 import FullCalendar from '@fullcalendar/vue3'
@@ -21,6 +21,7 @@ const calendarRef = ref(null)
 const currentView = ref('dayGridMonth')
 const schedules = ref([])
 const users = ref([])
+const locations = ref([])
 
 // 对话框状态
 const dialogVisible = ref(false)
@@ -34,9 +35,10 @@ const scheduleForm = ref(new Schedule())
 // 加载数据
 const loadData = async () => {
   try {
-    const [scheduleData, userData, settings] = await Promise.all([
+    const [scheduleData, userData, locationData, settings] = await Promise.all([
       scheduleStorage.getAll(),
       userStorage.getAll(),
+      locationStorage.getAll(),
       settingsStorage.get()
     ])
 
@@ -66,10 +68,22 @@ const loadData = async () => {
 
     schedules.value = migratedSchedules
     users.value = userData
+    locations.value = locationData
     currentView.value = settings.calendarView
   } catch (error) {
     ElMessage.error('加载数据失败')
   }
+}
+
+// 获取地点名称
+const getLocationName = (schedule) => {
+  // 如果有locationId，优先使用ID查找地点名称
+  if (schedule.locationId) {
+    const location = locations.value.find(loc => loc.id === schedule.locationId)
+    return location ? location.name : schedule.location || ''
+  }
+  // 如果没有locationId，使用location字段（向后兼容）
+  return schedule.location || ''
 }
 
 // 获取日历事件
@@ -85,7 +99,7 @@ const calendarEvents = computed(() => {
       extendedProps: {
         description: schedule.description,
         userId: schedule.userId,
-        location: schedule.location,
+        location: getLocationName(schedule),
         priority: schedule.priority,
         status: schedule.status,
         reminder: schedule.reminder,
@@ -405,7 +419,8 @@ const handleEventClick = async (arg) => {
       eventType: schedule.eventType || 'court', // 确保有默认值
       customEventType: schedule.customEventType || '', // 自定义事件类型
       userId: schedule.userId,
-      location: schedule.location,
+      location: getLocationName(schedule),
+      locationId: schedule.locationId,
       priority: schedule.priority,
       status: schedule.status,
       reminder: schedule.reminder
@@ -433,6 +448,7 @@ const resetForm = () => {
     customEventType: '',
     userId: null,
     location: '',
+    locationId: null,
     priority: 'medium',
     status: 'pending',
     reminder: 0
