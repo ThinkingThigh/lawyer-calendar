@@ -39,7 +39,32 @@ const loadData = async () => {
       userStorage.getAll(),
       settingsStorage.get()
     ])
-    schedules.value = scheduleData
+
+    // 数据迁移：为没有eventType的旧数据设置默认值
+    const migratedSchedules = scheduleData.map(schedule => {
+      const originalEventType = schedule.eventType
+      const originalDurationType = schedule.durationType
+
+      if (!schedule.eventType) {
+        schedule.eventType = 'court' // 默认为开庭
+        console.log(`迁移日程 ${schedule.id}: eventType 从 ${originalEventType} 改为 ${schedule.eventType}`)
+      }
+      if (!schedule.durationType) {
+        schedule.durationType = 'range' // 默认为时间段
+        console.log(`迁移日程 ${schedule.id}: durationType 从 ${originalDurationType} 改为 ${schedule.durationType}`)
+      }
+
+      // 确保迁移后的数据被保存
+      if (originalEventType !== schedule.eventType || originalDurationType !== schedule.durationType) {
+        scheduleStorage.update(schedule.id, schedule).catch(error => {
+          console.error('保存迁移数据失败:', error)
+        })
+      }
+
+      return schedule
+    })
+
+    schedules.value = migratedSchedules
     users.value = userData
     currentView.value = settings.calendarView
   } catch (error) {
@@ -50,7 +75,9 @@ const loadData = async () => {
 // 获取日历事件
 const calendarEvents = computed(() => {
   return schedules.value.map(schedule => {
-    const eventColor = getEventColor(schedule.eventType, schedule.customEventType, schedule.priority, schedule.status)
+    console.log(`处理日程: ${schedule.id}, eventType: ${schedule.eventType}, priority: ${schedule.priority}, status: ${schedule.status}`)
+    const eventColor = getEventColor(schedule.eventType || 'court', schedule.customEventType || '', schedule.priority, schedule.status)
+    console.log(`日程 ${schedule.id} 的颜色: ${eventColor}`)
 
     let eventConfig = {
       id: schedule.id,
@@ -69,9 +96,17 @@ const calendarEvents = computed(() => {
       backgroundColor: eventColor,
       borderColor: eventColor,
       textColor: '#ffffff',
+      color: eventColor, // 额外的颜色属性
       display: getEventDisplay(schedule),
       classNames: [`priority-${schedule.priority}`, `status-${schedule.status}`, `duration-${schedule.durationType}`, `event-type-${schedule.eventType}`]
     }
+
+    console.log(`日程 ${schedule.id} 配置:`, {
+      backgroundColor: eventConfig.backgroundColor,
+      borderColor: eventConfig.borderColor,
+      textColor: eventConfig.textColor,
+      allDay: eventConfig.allDay
+    })
 
     // 根据时间类型设置不同的时间属性
     if (schedule.durationType === 'allday') {
@@ -118,27 +153,41 @@ const getEventDisplay = (schedule) => {
 
 // 根据事件类型、优先级和状态获取事件颜色
 const getEventColor = (eventType, customEventType, priority, status) => {
+  console.log(`计算颜色 - eventType: ${eventType}, priority: ${priority}, status: ${status}`)
+
   // 优先使用事件类型颜色
   const eventTypeOption = EVENT_TYPE_OPTIONS.find(et => et.value === eventType)
-  if (eventTypeOption) {
+  if (eventTypeOption && eventType !== 'custom') {
+    console.log(`使用事件类型颜色: ${eventTypeOption.color}`)
     return eventTypeOption.color
+  }
+
+  // 对于自定义事件类型，使用统一的颜色
+  if (eventType === 'custom') {
+    console.log(`使用自定义事件类型颜色: #708090`)
+    return '#708090' // 自定义事件类型的统一颜色
   }
 
   // 如果没有事件类型信息，使用优先级颜色
   if (priority === 'high') {
+    console.log(`使用优先级颜色 (high): #F56C6C`)
     return '#F56C6C' // 红色
   } else if (priority === 'medium') {
+    console.log(`使用优先级颜色 (medium): #E6A23C`)
     return '#E6A23C' // 橙色
   } else if (priority === 'low') {
+    console.log(`使用优先级颜色 (low): #67C23A`)
     return '#67C23A' // 绿色
   }
 
   // 如果没有优先级信息，使用状态颜色
   const statusColor = STATUS_OPTIONS.find(s => s.value === status)?.color
   if (statusColor) {
+    console.log(`使用状态颜色: ${statusColor}`)
     return statusColor
   }
 
+  console.log(`使用默认颜色: #409EFF`)
   return '#409EFF' // 默认蓝色
 }
 
@@ -162,6 +211,13 @@ const eventDidMount = (arg) => {
   const event = arg.event
   const view = arg.view
 
+  console.log(`渲染事件: ${event.id}, 背景色: ${event.backgroundColor}, 边框色: ${event.borderColor}`)
+
+  // 确保颜色正确应用
+  eventEl.style.backgroundColor = event.backgroundColor || '#409EFF'
+  eventEl.style.borderColor = event.borderColor || '#409EFF'
+  eventEl.style.color = '#ffffff'
+
   // 清空默认内容
   eventEl.innerHTML = ''
 
@@ -184,7 +240,7 @@ const eventDidMount = (arg) => {
   titleDiv.title = event.title // 显示完整标题的tooltip
   titleContainer.appendChild(titleDiv)
 
-  // 根据视图类型和时间类型显示不同信息
+  // 根据视图类型显示不同信息
   if (view.type === 'dayGridMonth') {
     // 月视图：显示标题和时间
     const timeDiv = document.createElement('div')
@@ -192,11 +248,9 @@ const eventDidMount = (arg) => {
 
     if (event.extendedProps.durationType === 'allday') {
       timeDiv.textContent = '全天'
-      timeDiv.className = 'event-time event-allday'
     } else if (event.extendedProps.durationType === 'point') {
       const timePoint = dayjs(event.start).format('HH:mm')
-      timeDiv.textContent = timePoint + ' ⚫'
-      timeDiv.className = 'event-time event-point'
+      timeDiv.textContent = timePoint
     } else {
       const startTime = dayjs(event.start).format('HH:mm')
       timeDiv.textContent = startTime
@@ -204,14 +258,6 @@ const eventDidMount = (arg) => {
     titleContainer.appendChild(timeDiv)
   } else if (view.type === 'timeGridWeek' || view.type === 'timeGridDay') {
     // 周视图和日视图：显示标题和地点（如果有）
-    if (event.extendedProps.durationType === 'point') {
-      // 时间点事件显示特殊标识
-      const pointIndicator = document.createElement('div')
-      pointIndicator.className = 'event-point-indicator'
-      pointIndicator.textContent = '⚫'
-      contentDiv.appendChild(pointIndicator)
-    }
-
     if (event.extendedProps.location) {
       const locationDiv = document.createElement('div')
       locationDiv.className = 'event-location'
@@ -521,13 +567,13 @@ onMounted(() => {
 
 .event-time {
   font-size: 10px;
-  color: #606266;
+  color: #ffffff;
   font-weight: 400;
   flex-shrink: 0;
 }
 
 .event-location {
-  color: #909399;
+  color: #ffffff;
   font-size: 11px;
   white-space: nowrap;
   overflow: hidden;
@@ -535,23 +581,11 @@ onMounted(() => {
   margin-top: 2px;
 }
 
-.event-point-indicator {
-  color: #E6A23C;
-  font-size: 12px;
-  font-weight: bold;
-  margin-right: 4px;
-  display: inline-block;
-}
-
-.event-allday {
-  color: #67C23A !important;
-  font-weight: 500;
-}
 
 .event-details {
   margin-top: 4px;
   font-size: 11px;
-  color: #909399;
+  color: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -644,18 +678,7 @@ onMounted(() => {
   border-radius: 3px;
 }
 
-/* 优先级指示器 */
-:deep(.fc-event[data-priority="high"]) {
-  border-left: 3px solid #F56C6C;
-}
-
-:deep(.fc-event[data-priority="medium"]) {
-  border-left: 3px solid #E6A23C;
-}
-
-:deep(.fc-event[data-priority="low"]) {
-  border-left: 3px solid #67C23A;
-}
+/* 统一使用纯色块显示，移除所有边框装饰 */
 
 /* 状态指示器样式 */
 :deep(.fc-event[data-status="completed"]) {
@@ -668,15 +691,7 @@ onMounted(() => {
   background-color: #909399 !important;
 }
 
-/* 时间类型指示器样式 */
-:deep(.fc-event[data-duration-type="point"]) {
-  border-left: 4px solid #E6A23C !important;
-}
-
-:deep(.fc-event[data-duration-type="allday"]) {
-  border-top: 3px solid #67C23A !important;
-  border-radius: 0 !important;
-}
+/* 所有日程统一使用纯色块显示，不需要额外的边框装饰 */
 
 /* FullCalendar 弹出框样式优化 */
 :deep(.fc-popover) {
