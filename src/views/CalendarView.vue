@@ -51,31 +51,58 @@ const loadData = async () => {
 const calendarEvents = computed(() => {
   return schedules.value.map(schedule => {
     const eventColor = getEventColor(schedule.priority, schedule.status)
-    return {
+
+    let eventConfig = {
       id: schedule.id,
       title: schedule.title,
-      start: schedule.startTime,
-      end: schedule.endTime,
       extendedProps: {
         description: schedule.description,
         userId: schedule.userId,
         location: schedule.location,
         priority: schedule.priority,
         status: schedule.status,
-        reminder: schedule.reminder
+        reminder: schedule.reminder,
+        durationType: schedule.durationType
       },
       backgroundColor: eventColor,
       borderColor: eventColor,
       textColor: '#ffffff',
       display: getEventDisplay(schedule),
-      classNames: [`priority-${schedule.priority}`, `status-${schedule.status}`]
+      classNames: [`priority-${schedule.priority}`, `status-${schedule.status}`, `duration-${schedule.durationType}`]
     }
+
+    // 根据时间类型设置不同的时间属性
+    if (schedule.durationType === 'allday') {
+      // 全天事件
+      eventConfig.start = schedule.startTime.split(' ')[0] // 只取日期部分
+      eventConfig.allDay = true
+    } else if (schedule.durationType === 'point') {
+      // 时间点事件 - 设置开始和结束时间相同
+      eventConfig.start = schedule.startTime
+      eventConfig.end = schedule.startTime // 时间点事件开始和结束时间相同
+    } else {
+      // 时间段事件（默认）
+      eventConfig.start = schedule.startTime
+      eventConfig.end = schedule.endTime
+    }
+
+    return eventConfig
   })
 })
 
 // 根据日程属性决定显示方式
 const getEventDisplay = (schedule) => {
-  // 全天事件或持续时间超过8小时的事件使用block显示
+  // 全天事件使用block显示
+  if (schedule.durationType === 'allday') {
+    return 'block'
+  }
+
+  // 时间点事件使用特殊的点状显示
+  if (schedule.durationType === 'point') {
+    return 'block'
+  }
+
+  // 时间段事件：持续时间超过8小时的事件使用block显示
   const start = dayjs(schedule.startTime)
   const end = dayjs(schedule.endTime)
   const duration = end.diff(start, 'hour')
@@ -149,16 +176,34 @@ const eventDidMount = (arg) => {
   titleDiv.title = event.title // 显示完整标题的tooltip
   titleContainer.appendChild(titleDiv)
 
-  // 根据视图类型显示不同信息
+  // 根据视图类型和时间类型显示不同信息
   if (view.type === 'dayGridMonth') {
     // 月视图：显示标题和时间
     const timeDiv = document.createElement('div')
     timeDiv.className = 'event-time'
-    const startTime = dayjs(event.start).format('HH:mm')
-    timeDiv.textContent = startTime
+
+    if (event.extendedProps.durationType === 'allday') {
+      timeDiv.textContent = '全天'
+      timeDiv.className = 'event-time event-allday'
+    } else if (event.extendedProps.durationType === 'point') {
+      const timePoint = dayjs(event.start).format('HH:mm')
+      timeDiv.textContent = timePoint + ' ⚫'
+      timeDiv.className = 'event-time event-point'
+    } else {
+      const startTime = dayjs(event.start).format('HH:mm')
+      timeDiv.textContent = startTime
+    }
     titleContainer.appendChild(timeDiv)
   } else if (view.type === 'timeGridWeek' || view.type === 'timeGridDay') {
     // 周视图和日视图：显示标题和地点（如果有）
+    if (event.extendedProps.durationType === 'point') {
+      // 时间点事件显示特殊标识
+      const pointIndicator = document.createElement('div')
+      pointIndicator.className = 'event-point-indicator'
+      pointIndicator.textContent = '⚫'
+      contentDiv.appendChild(pointIndicator)
+    }
+
     if (event.extendedProps.location) {
       const locationDiv = document.createElement('div')
       locationDiv.className = 'event-location'
@@ -235,6 +280,7 @@ const handleEventClick = async (arg) => {
       description: schedule.description,
       startTime: schedule.startTime,
       endTime: schedule.endTime,
+      durationType: schedule.durationType || 'range', // 确保有默认值
       userId: schedule.userId,
       location: schedule.location,
       priority: schedule.priority,
@@ -259,6 +305,7 @@ const resetForm = () => {
     description: '',
     startTime: '',
     endTime: '',
+    durationType: 'range',
     userId: null,
     location: '',
     priority: 'medium',
@@ -476,6 +523,19 @@ onMounted(() => {
   margin-top: 2px;
 }
 
+.event-point-indicator {
+  color: #E6A23C;
+  font-size: 12px;
+  font-weight: bold;
+  margin-right: 4px;
+  display: inline-block;
+}
+
+.event-allday {
+  color: #67C23A !important;
+  font-weight: 500;
+}
+
 .event-details {
   margin-top: 4px;
   font-size: 11px;
@@ -594,6 +654,16 @@ onMounted(() => {
 :deep(.fc-event[data-status="cancelled"]) {
   opacity: 0.5;
   background-color: #909399 !important;
+}
+
+/* 时间类型指示器样式 */
+:deep(.fc-event[data-duration-type="point"]) {
+  border-left: 4px solid #E6A23C !important;
+}
+
+:deep(.fc-event[data-duration-type="allday"]) {
+  border-top: 3px solid #67C23A !important;
+  border-radius: 0 !important;
 }
 
 /* FullCalendar 弹出框样式优化 */

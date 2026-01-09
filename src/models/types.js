@@ -18,6 +18,7 @@ export class Schedule {
     this.description = data.description || ''
     this.startTime = data.startTime || ''
     this.endTime = data.endTime || ''
+    this.durationType = data.durationType || 'range' // point/range/allday
     this.userId = data.userId || null
     this.location = data.location || ''
     this.priority = data.priority || 'medium' // low/medium/high
@@ -63,4 +64,11 @@ export const CALENDAR_VIEWS = [
 export const THEME_OPTIONS = [
   { value: 'light', label: '浅色主题' },
   { value: 'dark', label: '深色主题' }
+]
+
+// 时间类型选项
+export const DURATION_TYPE_OPTIONS = [
+  { value: 'point', label: '时间点' },
+  { value: 'range', label: '时间段' },
+  { value: 'allday', label: '全天' }
 ]

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { STATUS_OPTIONS, PRIORITY_OPTIONS, User } from '../models/types.js'
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, DURATION_TYPE_OPTIONS, User } from '../models/types.js'
 import { userStorage } from '../services/storage.js'
 import { useUserStore } from '../stores/userStore.js'
 import {
@@ -15,7 +15,9 @@ import {
   ElRow,
   ElCol,
   ElMessage,
-  ElIcon
+  ElIcon,
+  ElRadioGroup,
+  ElRadio
 } from 'element-plus'
 import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 
@@ -69,6 +71,7 @@ const formData = ref({
   description: '',
   startTime: '',
   endTime: '',
+  durationType: 'range',
   userId: null,
   location: '',
   priority: 'medium',
@@ -85,11 +88,23 @@ const clientFormExpanded = ref(false) // 控制表单是否展开，默认折叠
 const newClientForm = ref(new User())
 const newClientFormRef = ref(null)
 
-const formRules = {
-  title: [{ required: true, message: '请输入日程标题', trigger: 'blur' }],
-  startTime: [{ required: true, message: '请选择开始时间', trigger: 'change' }],
-  endTime: [{ required: true, message: '请选择结束时间', trigger: 'change' }]
-}
+// 表单验证规则
+const formRules = computed(() => {
+  const rules = {
+    title: [{ required: true, message: '请输入日程标题', trigger: 'blur' }]
+  }
+
+  if (formData.value.durationType === 'point') {
+    rules.startTime = [{ required: true, message: '请选择时间点', trigger: 'change' }]
+  } else if (formData.value.durationType === 'range') {
+    rules.startTime = [{ required: true, message: '请选择开始时间', trigger: 'change' }]
+    rules.endTime = [{ required: true, message: '请选择结束时间', trigger: 'change' }]
+  } else if (formData.value.durationType === 'allday') {
+    rules.startTime = [{ required: true, message: '请选择日期', trigger: 'change' }]
+  }
+
+  return rules
+})
 
 // 新客户表单验证规则
 const clientFormRules = {
@@ -142,6 +157,7 @@ watch(() => props.visible, async (visible) => {
       description: '',
       startTime: '',
       endTime: '',
+      durationType: 'range',
       userId: null,
       location: '',
       priority: 'medium',
@@ -283,26 +299,69 @@ const saveNewClient = async () => {
           </el-form-item>
         </el-col>
 
-        <el-col :span="12">
-          <el-form-item label="开始时间" prop="startTime">
+        <el-col :span="24">
+          <el-form-item label="时间类型">
+            <el-radio-group v-model="formData.durationType">
+              <el-radio
+                v-for="option in DURATION_TYPE_OPTIONS"
+                :key="option.value"
+                :label="option.value"
+              >
+                {{ option.label }}
+              </el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-col>
+
+        <!-- 时间点类型 -->
+        <el-col v-if="formData.durationType === 'point'" :span="24">
+          <el-form-item label="时间点" prop="startTime">
             <el-date-picker
               v-model="formData.startTime"
               type="datetime"
-              placeholder="选择开始时间"
+              placeholder="选择具体时间"
               format="YYYY-MM-DD HH:mm"
               value-format="YYYY-MM-DD HH:mm"
             />
           </el-form-item>
         </el-col>
 
-        <el-col :span="12">
-          <el-form-item label="结束时间" prop="endTime">
+        <!-- 时间段类型 -->
+        <template v-else-if="formData.durationType === 'range'">
+          <el-col :span="12">
+            <el-form-item label="开始时间" prop="startTime">
+              <el-date-picker
+                v-model="formData.startTime"
+                type="datetime"
+                placeholder="选择开始时间"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DD HH:mm"
+              />
+            </el-form-item>
+          </el-col>
+
+          <el-col :span="12">
+            <el-form-item label="结束时间" prop="endTime">
+              <el-date-picker
+                v-model="formData.endTime"
+                type="datetime"
+                placeholder="选择结束时间"
+                format="YYYY-MM-DD HH:mm"
+                value-format="YYYY-MM-DD HH:mm"
+              />
+            </el-form-item>
+          </el-col>
+        </template>
+
+        <!-- 全天类型 -->
+        <el-col v-else-if="formData.durationType === 'allday'" :span="24">
+          <el-form-item label="日期" prop="startTime">
             <el-date-picker
-              v-model="formData.endTime"
-              type="datetime"
-              placeholder="选择结束时间"
-              format="YYYY-MM-DD HH:mm"
-              value-format="YYYY-MM-DD HH:mm"
+              v-model="formData.startTime"
+              type="date"
+              placeholder="选择日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
             />
           </el-form-item>
         </el-col>
