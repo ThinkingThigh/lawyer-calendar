@@ -97,7 +97,6 @@ const calendarEvents = computed(() => {
       borderColor: eventColor,
       textColor: '#ffffff',
       color: eventColor, // 额外的颜色属性
-      display: getEventDisplay(schedule),
       classNames: [`priority-${schedule.priority}`, `status-${schedule.status}`, `duration-${schedule.durationType}`, `event-type-${schedule.eventType}`]
     }
 
@@ -213,31 +212,24 @@ const eventDidMount = (arg) => {
 
   console.log(`渲染事件: ${event.id}, 背景色: ${event.backgroundColor}, 边框色: ${event.borderColor}`)
 
-  // 确保颜色正确应用
-  eventEl.style.backgroundColor = event.backgroundColor || '#409EFF'
-  eventEl.style.borderColor = event.borderColor || '#409EFF'
-  eventEl.style.color = '#ffffff'
+  // 使用requestAnimationFrame确保DOM更新完成
+  requestAnimationFrame(() => {
+    // 确保颜色正确应用
+    eventEl.style.backgroundColor = event.backgroundColor || '#409EFF'
+    eventEl.style.borderColor = event.borderColor || '#409EFF'
+    eventEl.style.color = '#ffffff'
 
-  // 清空默认内容
-  eventEl.innerHTML = ''
+    // 所有视图都完全控制内容显示
+    // 清空默认内容
+    eventEl.innerHTML = ''
 
-  // 创建自定义内容
-  const contentDiv = document.createElement('div')
-  contentDiv.className = 'event-content'
-
-  // 根据视图类型显示不同信息
-  console.log(`处理视图类型: ${view.type}`)
-
-  if (view.type === 'dayGridMonth') {
-    // 月视图：单行显示所有信息
-    console.log('进入月视图处理')
+    // 创建自定义内容
+    const contentDiv = document.createElement('div')
+    contentDiv.className = 'event-content'
 
     // 获取客户名称
-    console.log('users.value:', users.value)
-    console.log('event.extendedProps.userId:', event.extendedProps.userId)
     const user = users.value.find(u => u.id === event.extendedProps.userId)
     const userName = user ? user.name : ''
-    console.log('找到的用户:', user, '用户名:', userName)
 
     // 获取事件类型标签
     const eventTypeOption = EVENT_TYPE_OPTIONS.find(et => et.value === event.extendedProps.eventType)
@@ -247,7 +239,7 @@ const eventDidMount = (arg) => {
     const infoDiv = document.createElement('div')
     infoDiv.className = 'event-info-single'
 
-    // 构建显示文本
+    // 构建显示文本：✓ [开庭] 标题 客户名 时间
     let displayText = ''
 
     // 添加完成状态
@@ -281,119 +273,18 @@ const eventDidMount = (arg) => {
     infoDiv.title = displayText.trim() // 显示完整信息的tooltip
 
     contentDiv.appendChild(infoDiv)
-  } else if (view.type === 'timeGridWeek' || view.type === 'timeGridDay') {
-    // 周视图和日视图：单行显示所有信息
-    console.log('进入周/日视图处理')
 
-    // 获取客户名称
-    console.log('users.value:', users.value)
-    console.log('event.extendedProps.userId:', event.extendedProps.userId)
-    const user = users.value.find(u => u.id === event.extendedProps.userId)
-    const userName = user ? user.name : ''
-    console.log('找到的用户:', user, '用户名:', userName)
+    console.log(`最终渲染内容:`, contentDiv.innerHTML)
+    eventEl.appendChild(contentDiv)
 
-    // 获取事件类型标签
-    const eventTypeOption = EVENT_TYPE_OPTIONS.find(et => et.value === event.extendedProps.eventType)
-    const eventTypeLabel = eventTypeOption ? eventTypeOption.label : event.extendedProps.eventType
-
-    // 创建单行信息容器
-    const infoDiv = document.createElement('div')
-    infoDiv.className = 'event-info-single'
-
-    // 构建显示文本
-    let displayText = ''
-
-    // 添加完成状态
-    if (event.extendedProps.status === 'completed') {
-      displayText += '✓ '
-    }
-
-    // 添加事件类型
-    displayText += `[${eventTypeLabel}] `
-
-    // 添加标题
-    displayText += `${event.title} `
-
-    // 添加客户名称
-    if (userName) {
-      displayText += `${userName} `
-    }
-
-    // 添加时间
-    if (event.extendedProps.durationType === 'allday') {
-      displayText += '全天'
-    } else if (event.extendedProps.durationType === 'point') {
-      const timePoint = dayjs(event.start).format('HH:mm')
-      displayText += timePoint
-    } else {
-      const startTime = dayjs(event.start).format('HH:mm')
-      const endTime = dayjs(event.end).format('HH:mm')
-      displayText += `${startTime}-${endTime}`
-    }
-
-    infoDiv.textContent = displayText.trim()
-    infoDiv.title = displayText.trim() // 显示完整信息的tooltip
-
-    contentDiv.appendChild(infoDiv)
-  } else if (view.type === 'listWeek') {
-    // 列表视图：单行显示所有信息
-    console.log('进入列表视图处理')
-
-    // 获取客户名称
-    console.log('users.value:', users.value)
-    console.log('event.extendedProps.userId:', event.extendedProps.userId)
-    const user = users.value.find(u => u.id === event.extendedProps.userId)
-    const userName = user ? user.name : ''
-    console.log('找到的用户:', user, '用户名:', userName)
-
-    // 获取事件类型标签
-    const eventTypeOption = EVENT_TYPE_OPTIONS.find(et => et.value === event.extendedProps.eventType)
-    const eventTypeLabel = eventTypeOption ? eventTypeOption.label : event.extendedProps.eventType
-
-    // 创建单行信息容器
-    const infoDiv = document.createElement('div')
-    infoDiv.className = 'event-info-single'
-
-    // 构建显示文本
-    let displayText = ''
-
-    // 添加完成状态
-    if (event.extendedProps.status === 'completed') {
-      displayText += '✓ '
-    }
-
-    // 添加事件类型
-    displayText += `[${eventTypeLabel}] `
-
-    // 添加标题
-    displayText += `${event.title} `
-
-    // 添加客户名称
-    if (userName) {
-      displayText += `${userName} `
-    }
-
-    // 添加时间
-    if (event.extendedProps.durationType === 'allday') {
-      displayText += '全天'
-    } else if (event.extendedProps.durationType === 'point') {
-      const timePoint = dayjs(event.start).format('HH:mm')
-      displayText += timePoint
-    } else {
-      const startTime = dayjs(event.start).format('HH:mm')
-      const endTime = dayjs(event.end).format('HH:mm')
-      displayText += `${startTime}-${endTime}`
-    }
-
-    infoDiv.textContent = displayText.trim()
-    infoDiv.title = displayText.trim() // 显示完整信息的tooltip
-
-    contentDiv.appendChild(infoDiv)
-  }
-
-  console.log(`添加内容到事件元素:`, contentDiv.innerHTML)
-  eventEl.appendChild(contentDiv)
-  console.log(`事件元素最终内容:`, eventEl.innerHTML)
+    // 强制隐藏FullCalendar默认的子元素
+    setTimeout(() => {
+      const defaultDots = eventEl.querySelectorAll('.fc-daygrid-event-dot, .fc-event-time, .fc-event-title')
+      defaultDots.forEach(dot => {
+        dot.style.display = 'none'
+      })
+    }, 0)
+  })
 }
 
 // 处理日期点击
@@ -518,6 +409,30 @@ const handleEventMouseLeave = (arg) => {
   eventEl.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
 }
 
+// 处理视图切换
+const handleDatesSet = (dateInfo) => {
+  // 视图切换或日期改变时，清理可能出现的默认内容
+  console.log('视图切换:', dateInfo.view.type)
+
+  setTimeout(() => {
+    // 隐藏所有FullCalendar默认的事件内容元素
+    const defaultElements = document.querySelectorAll(`
+      .fc-daygrid-event-dot,
+      .fc-event-time,
+      .fc-event-title
+    `)
+    defaultElements.forEach(el => {
+      el.style.display = 'none !important'
+    })
+
+    // 确保我们的自定义内容可见
+    const customElements = document.querySelectorAll('.event-info-single')
+    customElements.forEach(el => {
+      el.style.display = 'block !important'
+    })
+  }, 200)
+}
+
 // 获取优先级标签
 const getPriorityTag = (priority) => {
   const option = PRIORITY_OPTIONS.find(p => p.value === priority)
@@ -562,6 +477,7 @@ onMounted(() => {
           dateClick: handleDateClick,
           eventClick: handleEventClick,
           eventDidMount: eventDidMount,
+          datesSet: handleDatesSet,
           height: 'calc(100vh - 200px)',
           dayMaxEvents: 6,
           moreLinkClick: 'popover',
@@ -648,6 +564,10 @@ onMounted(() => {
   line-height: 1.3;
   width: 100%;
   padding: 2px 4px;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  display: flex; /* 使用flex布局 */
+  align-items: center; /* 垂直居中 */
 }
 
 .event-title-container {
@@ -701,21 +621,63 @@ onMounted(() => {
 .event-info-single {
   font-size: 8px;
   color: #ffffff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   line-height: 1.2;
+  width: 100% !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  flex: 1; /* 允许flex布局中的扩展 */
 }
 
-/* 周视图和日视图中的事件信息样式 */
+/* 确保FullCalendar事件容器也单行显示 */
+:deep(.fc-event .event-info-single) {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 月视图事件样式 */
+:deep(.fc-daygrid-event) {
+  min-width: 80px; /* 最小宽度 */
+  width: 100%; /* 充分利用可用宽度 */
+}
+
+:deep(.fc-daygrid-event .event-info-single) {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100% !important;
+}
+
+/* 周视图和日视图中的事件样式 */
+:deep(.fc-timegrid-event) {
+  min-width: 120px; /* 最小宽度 */
+  width: 100%; /* 充分利用可用宽度 */
+}
+
 :deep(.fc-timegrid-event .event-info-single) {
   font-size: 10px;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100% !important;
 }
 
-/* 列表视图中的事件信息样式 */
+/* 列表视图中的事件样式 */
+:deep(.fc-list-event) {
+  min-width: 150px; /* 最小宽度 */
+  width: 100%; /* 充分利用可用宽度 */
+}
+
 :deep(.fc-list-event .event-info-single) {
   font-size: 11px;
   padding: 4px 0;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100% !important;
 }
 
 .dialog-footer {
@@ -768,6 +730,7 @@ onMounted(() => {
 
 :deep(.fc-timegrid-event .event-content) {
   padding: 2px 6px;
+  overflow: hidden !important;
 }
 
 :deep(.fc-timegrid-event .event-title) {
@@ -788,6 +751,7 @@ onMounted(() => {
 
 :deep(.fc-list-event .event-content) {
   margin-left: 8px;
+  overflow: hidden !important;
 }
 
 :deep(.fc-list-event .event-details) {
@@ -800,6 +764,24 @@ onMounted(() => {
 }
 
 /* 统一使用纯色块显示，移除所有边框装饰 */
+
+/* 隐藏FullCalendar默认的事件元素，只显示我们的自定义内容 */
+:deep(.fc-daygrid-event-dot) {
+  display: none !important;
+}
+
+:deep(.fc-event-time) {
+  display: none !important;
+}
+
+:deep(.fc-event-title) {
+  display: none !important;
+}
+
+/* 确保我们的自定义内容始终可见 */
+:deep(.event-info-single) {
+  display: block !important;
+}
 
 /* 状态指示器样式 */
 :deep(.fc-event[data-status="completed"]) {
