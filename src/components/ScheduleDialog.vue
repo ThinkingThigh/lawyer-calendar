@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick, onMounted } from 'vue'
-import { STATUS_OPTIONS, PRIORITY_OPTIONS, DURATION_TYPE_OPTIONS, EVENT_TYPE_OPTIONS, User } from '../models/types.js'
-import { userStorage } from '../services/storage.js'
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, DURATION_TYPE_OPTIONS, EVENT_TYPE_OPTIONS, User, Location } from '../models/types.js'
+import { userStorage, locationStorage } from '../services/storage.js'
 import { useUserStore } from '../stores/userStore.js'
 import {
   ElDialog,
@@ -84,11 +84,20 @@ const formData = ref({
 // 标记是否正在同步数据，避免递归更新
 const isSyncing = ref(false)
 
+// 选中的地点ID（用于选择器）
+const selectedLocationId = ref('')
+
 // 新建客户相关状态
 const clientCreationDialogVisible = ref(false)
 const clientFormExpanded = ref(false) // 控制表单是否展开，默认折叠
 const newClientForm = ref(new User())
 const newClientFormRef = ref(null)
+
+// 新建地点相关状态
+const locationCreationDialogVisible = ref(false)
+const locationFormExpanded = ref(false) // 控制表单是否展开，默认折叠
+const newLocationForm = ref(new Location())
+const newLocationFormRef = ref(null)
 
 // 表单验证规则
 const formRules = computed(() => {
@@ -119,6 +128,11 @@ const clientFormRules = {
   phone: [{ required: false, message: '请输入电话', trigger: 'blur' }]
 }
 
+const locationFormRules = {
+  name: [{ required: true, message: '请输入地点名称', trigger: 'blur' }],
+  address: [{ required: true, message: '请输入地址', trigger: 'blur' }]
+}
+
 // 用户选项 - 直接使用store的数据
 const userOptions = computed(() => {
   const options = userStore.users.map(user => ({
@@ -135,6 +149,29 @@ const userOptions = computed(() => {
   return options
 })
 
+// 地点选项
+const locationOptions = ref([])
+const locationOptionsComputed = computed(() => {
+  const options = locationOptions.value.map(location => ({
+    value: location.id,
+    label: location.name
+  }))
+
+  // 添加"新建地点"选项
+  options.unshift({
+    value: '__create_new__',
+    label: '+ 新建地点'
+  })
+
+  // 添加"手动输入"选项
+  options.unshift({
+    value: '__manual_input__',
+    label: '手动输入地点'
+  })
+
+  return options
+})
+
 // 确保用户数据已加载
 const ensureUsersLoaded = async () => {
   if (userStore.users.length === 0) {
@@ -143,16 +180,39 @@ const ensureUsersLoaded = async () => {
   }
 }
 
+const loadLocations = async () => {
+  try {
+    locationOptions.value = await locationStorage.getAll()
+  } catch (error) {
+    console.error('加载地点数据失败:', error)
+  }
+}
+
+const ensureDataLoaded = async () => {
+  await Promise.all([
+    ensureUsersLoaded(),
+    loadLocations()
+  ])
+}
+
 // 监听对话框显示状态
 watch(() => props.visible, async (visible) => {
   if (visible) {
-    // 确保用户数据已加载
-    await ensureUsersLoaded()
+    // 确保用户和地点数据已加载
+    await ensureDataLoaded()
 
     // 当对话框打开时，同步表单数据
     isSyncing.value = true
     await nextTick()
     formData.value = { ...props.modelValue }
+
+    // 根据location设置selectedLocationId
+    if (formData.value.location) {
+      const matchedLocation = locationOptions.value.find(loc => loc.name === formData.value.location)
+      selectedLocationId.value = matchedLocation ? matchedLocation.id : '__manual_input__'
+    } else {
+      selectedLocationId.value = ''
+    }
 
     isSyncing.value = false
   } else {
@@ -173,6 +233,7 @@ watch(() => props.visible, async (visible) => {
       status: 'pending',
       reminder: 0
     }
+    selectedLocationId.value = ''
     isSyncing.value = false
   }
 })
@@ -230,6 +291,33 @@ const handleClientChange = (value) => {
   }
 }
 
+// 处理地点选择变化
+const handleLocationChange = (value) => {
+  console.log('📍 地点选择:', value)
+
+  if (value === '__create_new__') {
+    console.log('🆕 用户选择新建地点')
+    // 重置选择
+    formData.value.location = ''
+    console.log('🔄 重置location为空')
+
+    // 打开新建地点对话框
+    openLocationCreationDialog()
+    console.log('📂 打开新建地点对话框')
+  } else if (value === '__manual_input__') {
+    console.log('✏️ 用户选择手动输入地点')
+    // 重置选择，允许手动输入
+    formData.value.location = ''
+  } else if (value) {
+    // 选择现有地点
+    const selectedLocation = locationOptions.value.find(loc => loc.id === value)
+    if (selectedLocation) {
+      formData.value.location = selectedLocation.name
+      console.log('📍 选择现有地点:', selectedLocation.name)
+    }
+  }
+}
+
 
 // 打开新建客户对话框
 const openClientCreationDialog = () => {
@@ -269,6 +357,51 @@ const saveNewClient = async () => {
     if (error !== 'validation_failed') {
       console.error('❌ 创建客户失败:', error)
       ElMessage.error('创建客户失败')
+    }
+  }
+}
+
+// 打开新建地点对话框
+const openLocationCreationDialog = () => {
+  newLocationForm.value = new Location()
+  locationFormExpanded.value = false // 默认折叠状态
+  locationCreationDialogVisible.value = true
+}
+
+// 关闭新建地点对话框
+const closeLocationCreationDialog = () => {
+  locationCreationDialogVisible.value = false
+  newLocationForm.value = new Location()
+}
+
+// 保存新地点
+const saveNewLocation = async () => {
+  try {
+    if (!newLocationFormRef.value) return
+
+    await newLocationFormRef.value.validate()
+
+    // 添加新地点
+    const newLocation = await locationStorage.add(newLocationForm.value)
+    console.log('✅ 新地点创建成功:', newLocation)
+    ElMessage.success('地点创建成功')
+
+    // 重新加载地点数据
+    await loadLocations()
+
+    // 关闭对话框
+    closeLocationCreationDialog()
+    console.log('🔒 对话框已关闭')
+
+    // 设置选中值
+    console.log('🎯 设置选中值:', newLocation.id)
+    formData.value.location = newLocation.name
+    console.log('✅ 选中值设置完成')
+
+  } catch (error) {
+    if (error !== 'validation_failed') {
+      console.error('❌ 创建地点失败:', error)
+      ElMessage.error('创建地点失败')
     }
   }
 }
@@ -409,10 +542,20 @@ const saveNewClient = async () => {
 
         <el-col :span="12">
           <el-form-item label="地点">
-            <el-input
-              v-model="formData.location"
-              placeholder="请输入地点"
-            />
+            <el-select
+              v-model="selectedLocationId"
+              placeholder="选择地点"
+              clearable
+              filterable
+              @change="handleLocationChange"
+            >
+              <el-option
+                v-for="location in locationOptionsComputed"
+                :key="location.value"
+                :label="location.label"
+                :value="location.value"
+              />
+            </el-select>
           </el-form-item>
         </el-col>
 
@@ -542,6 +685,67 @@ const saveNewClient = async () => {
         <el-button @click="closeClientCreationDialog">取消</el-button>
         <el-button type="primary" @click="saveNewClient">
           创建客户
+        </el-button>
+      </span>
+    </template>
+  </el-dialog>
+
+  <!-- 新建地点对话框 -->
+  <el-dialog
+    v-model="locationCreationDialogVisible"
+    title="新建地点"
+    width="500px"
+    :before-close="closeLocationCreationDialog"
+  >
+    <!-- 地点表单 -->
+    <el-form
+      ref="newLocationFormRef"
+      :model="newLocationForm"
+      :rules="locationFormRules"
+      label-width="80px"
+    >
+      <el-form-item label="地点名称" prop="name">
+        <el-input
+          v-model="newLocationForm.name"
+          placeholder="请输入地点名称"
+        />
+      </el-form-item>
+
+      <!-- 展开/折叠按钮 -->
+      <div class="expand-toggle" @click="locationFormExpanded = !locationFormExpanded">
+        <span class="expand-text">
+          {{ locationFormExpanded ? '收起' : '展开更多信息' }}
+        </span>
+        <el-icon class="expand-icon">
+          <component :is="locationFormExpanded ? ArrowUp : ArrowDown" />
+        </el-icon>
+      </div>
+
+      <!-- 展开的字段 -->
+      <div v-show="locationFormExpanded" class="expanded-fields">
+        <el-form-item label="地址">
+          <el-input
+            v-model="newLocationForm.address"
+            placeholder="请输入详细地址"
+          />
+        </el-form-item>
+
+        <el-form-item label="备注">
+          <el-input
+            v-model="newLocationForm.notes"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入备注信息（如交通方式、停车信息等）"
+          />
+        </el-form-item>
+      </div>
+    </el-form>
+
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="closeLocationCreationDialog">取消</el-button>
+        <el-button type="primary" @click="saveNewLocation">
+          创建地点
         </el-button>
       </span>
     </template>

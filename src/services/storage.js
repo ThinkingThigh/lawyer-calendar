@@ -9,6 +9,7 @@ localforage.config({
 // 数据存储键
 const STORAGE_KEYS = {
   USERS: 'users',
+  LOCATIONS: 'locations',
   SCHEDULES: 'schedules',
   SETTINGS: 'settings'
 }
@@ -233,6 +234,100 @@ export const scheduleStorage = {
   }
 }
 
+// 地点数据操作
+export const locationStorage = {
+  // 获取所有地点
+  async getAll() {
+    try {
+      const locations = await localforage.getItem(STORAGE_KEYS.LOCATIONS) || []
+      return locations.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    } catch (error) {
+      console.error('获取地点数据失败:', error)
+      return []
+    }
+  },
+
+  // 根据ID获取地点
+  async getById(id) {
+    try {
+      const locations = await this.getAll()
+      return locations.find(location => location.id === id)
+    } catch (error) {
+      console.error('获取地点失败:', error)
+      return null
+    }
+  },
+
+  // 添加地点
+  async add(locationData) {
+    try {
+      const locations = await this.getAll()
+      // 创建新地点时，确保使用新生成的唯一ID，忽略传入的id（如果有的话）
+      const { id, ...dataWithoutId } = locationData
+      const newLocation = {
+        id: generateId(),
+        ...dataWithoutId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      locations.push(newLocation)
+      await localforage.setItem(STORAGE_KEYS.LOCATIONS, locations)
+      return newLocation
+    } catch (error) {
+      console.error('添加地点失败:', error)
+      throw error
+    }
+  },
+
+  // 更新地点
+  async update(id, locationData) {
+    try {
+      const locations = await this.getAll()
+      const index = locations.findIndex(location => location.id === id)
+      if (index === -1) throw new Error('地点不存在')
+
+      locations[index] = {
+        ...locations[index],
+        ...locationData,
+        updatedAt: new Date().toISOString()
+      }
+      await localforage.setItem(STORAGE_KEYS.LOCATIONS, locations)
+      return locations[index]
+    } catch (error) {
+      console.error('更新地点失败:', error)
+      throw error
+    }
+  },
+
+  // 删除地点
+  async delete(id) {
+    try {
+      const locations = await this.getAll()
+      const filteredLocations = locations.filter(location => location.id !== id)
+      await localforage.setItem(STORAGE_KEYS.LOCATIONS, filteredLocations)
+      return true
+    } catch (error) {
+      console.error('删除地点失败:', error)
+      throw error
+    }
+  },
+
+  // 搜索地点
+  async search(query) {
+    try {
+      const locations = await this.getAll()
+      const lowerQuery = query.toLowerCase()
+      return locations.filter(location =>
+        location.name.toLowerCase().includes(lowerQuery) ||
+        location.address.toLowerCase().includes(lowerQuery)
+      )
+    } catch (error) {
+      console.error('搜索地点失败:', error)
+      return []
+    }
+  }
+}
+
 // 系统设置操作
 export const settingsStorage = {
   // 获取设置
@@ -273,11 +368,13 @@ export const dataExport = {
   async exportAll() {
     try {
       const users = await userStorage.getAll()
+      const locations = await locationStorage.getAll()
       const schedules = await scheduleStorage.getAll()
       const settings = await settingsStorage.get()
 
       return {
         users,
+        locations,
         schedules,
         settings,
         exportTime: new Date().toISOString()

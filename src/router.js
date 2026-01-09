@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import CalendarView from './views/CalendarView.vue'
 import ClientManagement from './views/ClientManagement.vue'
+import LocationManagement from './views/LocationManagement.vue'
 import ScheduleManagement from './views/ScheduleManagement.vue'
 import ClientDetail from './views/ClientDetail.vue'
 import Settings from './views/Settings.vue'
@@ -21,6 +22,11 @@ const routes = [
     name: 'ClientDetail',
     component: ClientDetail,
     props: true
+  },
+  {
+    path: '/locations',
+    name: 'LocationManagement',
+    component: LocationManagement
   },
   {
     path: '/schedules',

@@ -10,6 +10,18 @@ export class User {
   }
 }
 
+// 地点数据模型
+export class Location {
+  constructor(data = {}) {
+    this.id = data.id || ''
+    this.name = data.name || ''
+    this.address = data.address || ''
+    this.notes = data.notes || ''
+    this.createdAt = data.createdAt || new Date().toISOString()
+    this.updatedAt = data.updatedAt || new Date().toISOString()
+  }
+}
+
 // 日程数据模型
 export class Schedule {
   constructor(data = {}) {

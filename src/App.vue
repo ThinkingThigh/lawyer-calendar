@@ -5,6 +5,7 @@ import { ElMenu, ElMenuItem, ElIcon, ElContainer, ElHeader, ElMain } from 'eleme
 import {
   Calendar,
   User,
+  Location,
   DocumentAdd,
   Setting
 } from '@element-plus/icons-vue'
@@ -21,6 +22,7 @@ const handleSelect = (key) => {
 const menuItems = [
   { key: 'Calendar', label: '日历', icon: Calendar },
   { key: 'ClientManagement', label: '客户管理', icon: User },
+  { key: 'LocationManagement', label: '地点管理', icon: Location },
   { key: 'ScheduleManagement', label: '日程管理', icon: DocumentAdd },
   { key: 'Settings', label: '设置', icon: Setting }
 ]
