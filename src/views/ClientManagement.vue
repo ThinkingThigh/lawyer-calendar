@@ -279,10 +279,11 @@ export default {
 <style scoped>
 .client-management {
   height: 100%;
+  overflow: auto;
 }
 
 .client-card {
-  height: 100%;
+  min-height: 100%;
 }
 
 .card-header {
