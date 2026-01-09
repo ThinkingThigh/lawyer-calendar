@@ -32,7 +32,7 @@ const userFormRef = ref(null)
 
 const formRules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入电话', trigger: 'blur' }]
+  phone: [{ required: false, message: '请输入电话', trigger: 'blur' }]
 }
 
 // 过滤后的客户列表
