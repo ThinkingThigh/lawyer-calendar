@@ -279,65 +279,107 @@ const eventDidMount = (arg) => {
 
     contentDiv.appendChild(infoDiv)
   } else if (view.type === 'timeGridWeek' || view.type === 'timeGridDay') {
-    // 周视图和日视图：显示标题和地点（如果有）
+    // 周视图和日视图：单行显示所有信息
     console.log('进入周/日视图处理')
-    const titleContainer = document.createElement('div')
-    titleContainer.className = 'event-title-container'
 
-    // 计算合适的标题长度
-    const elementWidth = eventEl.offsetWidth || 120 // 默认宽度
-    const optimalLength = getOptimalTitleLength(elementWidth)
-    const displayTitle = truncateText(event.title, optimalLength)
+    // 获取客户名称
+    console.log('users.value:', users.value)
+    console.log('event.extendedProps.userId:', event.extendedProps.userId)
+    const user = users.value.find(u => u.id === event.extendedProps.userId)
+    const userName = user ? user.name : ''
+    console.log('找到的用户:', user, '用户名:', userName)
 
-    const titleDiv = document.createElement('div')
-    titleDiv.className = 'event-title'
-    titleDiv.textContent = displayTitle
-    titleDiv.title = event.title // 显示完整标题的tooltip
-    titleContainer.appendChild(titleDiv)
-    contentDiv.appendChild(titleContainer)
+    // 获取事件类型标签
+    const eventTypeOption = EVENT_TYPE_OPTIONS.find(et => et.value === event.extendedProps.eventType)
+    const eventTypeLabel = eventTypeOption ? eventTypeOption.label : event.extendedProps.eventType
 
-    if (event.extendedProps.location) {
-      const locationDiv = document.createElement('div')
-      locationDiv.className = 'event-location'
-      locationDiv.textContent = truncateText(event.extendedProps.location, 15)
-      locationDiv.title = event.extendedProps.location // 显示完整地点的tooltip
-      contentDiv.appendChild(locationDiv)
+    // 创建单行信息容器
+    const infoDiv = document.createElement('div')
+    infoDiv.className = 'event-info-single'
+
+    // 构建显示文本
+    let displayText = ''
+
+    // 添加完成状态
+    if (event.extendedProps.status === 'completed') {
+      displayText += '✓ '
     }
+
+    // 添加事件类型
+    displayText += `[${eventTypeLabel}] `
+
+    // 添加客户名称
+    if (userName) {
+      displayText += `${userName} `
+    }
+
+    // 添加时间
+    if (event.extendedProps.durationType === 'allday') {
+      displayText += '全天'
+    } else if (event.extendedProps.durationType === 'point') {
+      const timePoint = dayjs(event.start).format('HH:mm')
+      displayText += timePoint
+    } else {
+      const startTime = dayjs(event.start).format('HH:mm')
+      const endTime = dayjs(event.end).format('HH:mm')
+      displayText += `${startTime}-${endTime}`
+    }
+
+    infoDiv.textContent = displayText.trim()
+    infoDiv.title = displayText.trim() // 显示完整信息的tooltip
+
+    contentDiv.appendChild(infoDiv)
   } else if (view.type === 'listWeek') {
-    // 列表视图：显示标题和完整信息
+    // 列表视图：单行显示所有信息
     console.log('进入列表视图处理')
-    const titleContainer = document.createElement('div')
-    titleContainer.className = 'event-title-container'
 
-    const titleDiv = document.createElement('div')
-    titleDiv.className = 'event-title'
-    titleDiv.textContent = event.title
-    titleDiv.title = event.title // 显示完整标题的tooltip
-    titleContainer.appendChild(titleDiv)
-    contentDiv.appendChild(titleContainer)
+    // 获取客户名称
+    console.log('users.value:', users.value)
+    console.log('event.extendedProps.userId:', event.extendedProps.userId)
+    const user = users.value.find(u => u.id === event.extendedProps.userId)
+    const userName = user ? user.name : ''
+    console.log('找到的用户:', user, '用户名:', userName)
 
-    const detailsDiv = document.createElement('div')
-    detailsDiv.className = 'event-details'
+    // 获取事件类型标签
+    const eventTypeOption = EVENT_TYPE_OPTIONS.find(et => et.value === event.extendedProps.eventType)
+    const eventTypeLabel = eventTypeOption ? eventTypeOption.label : event.extendedProps.eventType
 
-    if (event.extendedProps.location) {
-      const locationDiv = document.createElement('span')
-      locationDiv.className = 'event-location'
-      locationDiv.textContent = `地点：${truncateText(event.extendedProps.location, 20)}`
-      locationDiv.title = event.extendedProps.location
-      detailsDiv.appendChild(locationDiv)
+    // 创建单行信息容器
+    const infoDiv = document.createElement('div')
+    infoDiv.className = 'event-info-single'
+
+    // 构建显示文本
+    let displayText = ''
+
+    // 添加完成状态
+    if (event.extendedProps.status === 'completed') {
+      displayText += '✓ '
     }
 
-    if (event.extendedProps.description) {
-      const descDiv = document.createElement('span')
-      descDiv.className = 'event-description'
-      descDiv.textContent = event.extendedProps.description.length > 50
-        ? event.extendedProps.description.substring(0, 50) + '...'
-        : event.extendedProps.description
-      descDiv.title = event.extendedProps.description
-      detailsDiv.appendChild(descDiv)
+    // 添加事件类型
+    displayText += `[${eventTypeLabel}] `
+
+    // 添加客户名称
+    if (userName) {
+      displayText += `${userName} `
     }
 
-    contentDiv.appendChild(detailsDiv)
+    // 添加时间
+    if (event.extendedProps.durationType === 'allday') {
+      displayText += '全天'
+    } else if (event.extendedProps.durationType === 'point') {
+      const timePoint = dayjs(event.start).format('HH:mm')
+      displayText += timePoint
+    } else {
+      const startTime = dayjs(event.start).format('HH:mm')
+      const endTime = dayjs(event.end).format('HH:mm')
+      displayText += `${startTime}-${endTime}`
+    }
+
+    infoDiv.textContent = displayText.trim()
+    infoDiv.title = displayText.trim() // 显示完整信息的tooltip
+
+    contentDiv.appendChild(infoDiv)
   }
 
   console.log(`添加内容到事件元素:`, contentDiv.innerHTML)
@@ -654,6 +696,17 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.2;
+}
+
+/* 周视图和日视图中的事件信息样式 */
+:deep(.fc-timegrid-event .event-info-single) {
+  font-size: 11px;
+}
+
+/* 列表视图中的事件信息样式 */
+:deep(.fc-list-event .event-info-single) {
+  font-size: 12px;
+  padding: 4px 0;
 }
 
 .dialog-footer {
