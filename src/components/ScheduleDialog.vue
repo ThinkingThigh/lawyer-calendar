@@ -125,7 +125,7 @@ const formRules = computed(() => {
 
 // 新客户表单验证规则
 const clientFormRules = {
-  name: [{ required: true, message: '请输入客户姓名', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
   phone: [{ required: false, message: '请输入电话', trigger: 'blur' }]
 }
 
@@ -651,10 +651,10 @@ const saveNewLocation = async () => {
       :rules="clientFormRules"
       label-width="80px"
     >
-      <el-form-item label="姓名" prop="name">
+      <el-form-item label="客户名称" prop="name">
         <el-input
           v-model="newClientForm.name"
-          placeholder="请输入客户姓名"
+          placeholder="请输入客户名称"
         />
       </el-form-item>
 

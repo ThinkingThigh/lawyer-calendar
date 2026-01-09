@@ -31,7 +31,7 @@ const userForm = ref(new User())
 const userFormRef = ref(null)
 
 const formRules = {
-  name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入客户名称', trigger: 'blur' }],
   phone: [{ required: false, message: '请输入电话', trigger: 'blur' }]
 }
 
@@ -54,7 +54,8 @@ const filteredUsers = computed(() => {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(user =>
       user.name.toLowerCase().includes(query) ||
-      user.phone.toLowerCase().includes(query)
+      user.phone.toLowerCase().includes(query) ||
+      (user.notes && user.notes.toLowerCase().includes(query))
     )
   }
 
@@ -171,7 +172,7 @@ onMounted(() => {
       <div class="search-bar">
         <el-input
           v-model="searchQuery"
-          placeholder="搜索姓名或电话"
+          placeholder="搜索客户名称、电话或备注"
           clearable
           style="width: 300px; margin-right: 20px"
         >
@@ -201,7 +202,7 @@ onMounted(() => {
         stripe
         :default-sort="{prop: 'updatedAt', order: 'descending'}"
       >
-        <el-table-column prop="name" label="姓名" width="150" sortable>
+        <el-table-column prop="name" label="客户名称" width="150" sortable>
           <template #default="scope">
             <el-tag>{{ scope.row.name }}</el-tag>
           </template>
@@ -274,10 +275,10 @@ onMounted(() => {
         :rules="formRules"
         label-width="80px"
       >
-        <el-form-item label="姓名" prop="name">
+        <el-form-item label="客户名称" prop="name">
           <el-input
             v-model="userForm.name"
-            placeholder="请输入客户姓名"
+            placeholder="请输入客户名称"
           />
         </el-form-item>
 

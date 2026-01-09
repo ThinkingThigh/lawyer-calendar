@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { userStorage, scheduleStorage } from '../services/storage.js'
-import { STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
+import { STATUS_OPTIONS, PRIORITY_OPTIONS, CUSTOMER_TYPE_OPTIONS } from '../models/types.js'
 import {
   ElCard,
   ElRow,
@@ -48,14 +48,6 @@ const goBack = () => {
   router.push({ name: 'ClientManagement' })
 }
 
-// 编辑客户
-const editUser = () => {
-  router.push({
-    name: 'ClientManagement',
-    query: { edit: user.value.id }
-  })
-}
-
 // 获取优先级标签
 const getPriorityTag = (priority) => {
   const option = PRIORITY_OPTIONS.find(p => p.value === priority)
@@ -66,6 +58,14 @@ const getPriorityTag = (priority) => {
 const getStatusTag = (status) => {
   const option = STATUS_OPTIONS.find(s => s.value === status)
   return option ? { text: option.label, color: option.color } : { text: status, color: '#409EFF' }
+}
+
+// 获取客户类型标签
+const getCustomerTypeLabel = (user) => {
+  if (user.customerType === 'custom') {
+    return user.customCustomerType || '自定义'
+  }
+  return user.customerType || '常法'
 }
 
 // 格式化日期时间
@@ -90,7 +90,6 @@ onMounted(() => {
         <div class="card-header">
           <h2>客户详情</h2>
           <div class="header-actions">
-            <el-button @click="editUser">编辑客户</el-button>
             <el-button @click="goBack">返回列表</el-button>
           </div>
         </div>
@@ -100,14 +99,20 @@ onMounted(() => {
         <el-row :gutter="20">
           <el-col :span="12">
             <div class="info-item">
-              <label>姓名：</label>
+              <label>客户名称：</label>
               <span>{{ user.name }}</span>
             </div>
           </el-col>
           <el-col :span="12">
             <div class="info-item">
               <label>电话：</label>
-              <span>{{ user.phone }}</span>
+              <span>{{ user.phone || '-' }}</span>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="info-item">
+              <label>客户类型：</label>
+              <span>{{ getCustomerTypeLabel(user) }}</span>
             </div>
           </el-col>
           <el-col :span="24">
