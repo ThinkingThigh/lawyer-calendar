@@ -270,7 +270,82 @@ const eventDidMount = (arg) => {
     }
 
     infoDiv.textContent = displayText.trim()
-    infoDiv.title = displayText.trim() // 显示完整信息的tooltip
+
+    // 构建更详细的tooltip信息
+    let tooltipText = `标题: ${event.title}\n`
+    tooltipText += `类型: ${eventTypeLabel}\n`
+    if (userName) {
+      tooltipText += `客户: ${userName}\n`
+    }
+    if (event.extendedProps.durationType === 'allday') {
+      tooltipText += `时间: 全天\n`
+    } else if (event.extendedProps.durationType === 'point') {
+      const timePoint = dayjs(event.start).format('YYYY-MM-DD HH:mm')
+      tooltipText += `时间: ${timePoint}\n`
+    } else {
+      const startTime = dayjs(event.start).format('YYYY-MM-DD HH:mm')
+      const endTime = dayjs(event.end).format('HH:mm')
+      tooltipText += `时间: ${startTime} - ${endTime}\n`
+    }
+    if (event.extendedProps.location) {
+      tooltipText += `地点: ${event.extendedProps.location}\n`
+    }
+    if (event.extendedProps.description) {
+      tooltipText += `描述: ${event.extendedProps.description}\n`
+    }
+    tooltipText += `状态: ${event.extendedProps.status === 'completed' ? '已完成' : '进行中'}`
+
+    // 移除原生title，改用自定义tooltip
+    // infoDiv.title = tooltipText.trim()
+
+    // 创建自定义tooltip容器
+    const tooltipDiv = document.createElement('div')
+    tooltipDiv.className = 'event-tooltip'
+    tooltipDiv.style.display = 'none'
+    tooltipDiv.style.position = 'fixed'
+    tooltipDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'
+    tooltipDiv.style.color = '#ffffff'
+    tooltipDiv.style.padding = '8px 12px'
+    tooltipDiv.style.borderRadius = '4px'
+    tooltipDiv.style.fontSize = '12px'
+    tooltipDiv.style.whiteSpace = 'pre-line'
+    tooltipDiv.style.zIndex = '9999'
+    tooltipDiv.style.pointerEvents = 'none'
+    tooltipDiv.style.maxWidth = '300px'
+    tooltipDiv.style.wordWrap = 'break-word'
+    tooltipDiv.textContent = tooltipText.trim()
+
+    // 添加事件监听器
+    let tooltipTimeout
+    infoDiv.addEventListener('mouseenter', (e) => {
+      tooltipTimeout = setTimeout(() => {
+        tooltipDiv.style.display = 'block'
+        const rect = infoDiv.getBoundingClientRect()
+        tooltipDiv.style.left = rect.left + 'px'
+        tooltipDiv.style.top = (rect.top - tooltipDiv.offsetHeight - 5) + 'px'
+
+        // 确保tooltip不超出屏幕边界
+        const tooltipRect = tooltipDiv.getBoundingClientRect()
+        if (tooltipRect.right > window.innerWidth) {
+          tooltipDiv.style.left = (window.innerWidth - tooltipRect.width - 10) + 'px'
+        }
+        if (tooltipRect.left < 0) {
+          tooltipDiv.style.left = '10px'
+        }
+        if (tooltipRect.top < 0) {
+          tooltipDiv.style.top = (rect.bottom + 5) + 'px'
+        }
+
+        document.body.appendChild(tooltipDiv)
+      }, 1000) // 1秒延迟
+    })
+
+    infoDiv.addEventListener('mouseleave', () => {
+      clearTimeout(tooltipTimeout)
+      if (document.body.contains(tooltipDiv)) {
+        document.body.removeChild(tooltipDiv)
+      }
+    })
 
     contentDiv.appendChild(infoDiv)
 
