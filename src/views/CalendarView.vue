@@ -258,6 +258,9 @@ const eventDidMount = (arg) => {
     // 添加事件类型
     displayText += `[${eventTypeLabel}] `
 
+    // 添加标题
+    displayText += `${event.title} `
+
     // 添加客户名称
     if (userName) {
       displayText += `${userName} `
@@ -307,6 +310,9 @@ const eventDidMount = (arg) => {
 
     // 添加事件类型
     displayText += `[${eventTypeLabel}] `
+
+    // 添加标题
+    displayText += `${event.title} `
 
     // 添加客户名称
     if (userName) {
@@ -358,6 +364,9 @@ const eventDidMount = (arg) => {
 
     // 添加事件类型
     displayText += `[${eventTypeLabel}] `
+
+    // 添加标题
+    displayText += `${event.title} `
 
     // 添加客户名称
     if (userName) {
@@ -690,7 +699,7 @@ onMounted(() => {
 }
 
 .event-info-single {
-  font-size: 9px;
+  font-size: 8px;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
@@ -700,12 +709,12 @@ onMounted(() => {
 
 /* 周视图和日视图中的事件信息样式 */
 :deep(.fc-timegrid-event .event-info-single) {
-  font-size: 11px;
+  font-size: 10px;
 }
 
 /* 列表视图中的事件信息样式 */
 :deep(.fc-list-event .event-info-single) {
-  font-size: 12px;
+  font-size: 11px;
   padding: 4px 0;
 }
 
