@@ -200,10 +200,10 @@ const eventDidMount = (arg) => {
 const handleDateClick = (arg) => {
   resetForm()
 
-  // 设置默认值为当前时间和当前时间+30分钟
-  const now = dayjs()
-  scheduleForm.value.startTime = now.format('YYYY-MM-DD HH:mm')
-  scheduleForm.value.endTime = now.add(30, 'minute').format('YYYY-MM-DD HH:mm')
+  // 使用点击的日期作为默认日期，设置上午9:00开始，持续1小时
+  const clickedDate = dayjs(arg.date)
+  scheduleForm.value.startTime = clickedDate.hour(9).minute(0).format('YYYY-MM-DD HH:mm')
+  scheduleForm.value.endTime = clickedDate.hour(10).minute(0).format('YYYY-MM-DD HH:mm')
 
   dialogTitle.value = '添加日程'
   isEditMode.value = false
