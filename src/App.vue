@@ -6,6 +6,7 @@ import {
   Calendar,
   User,
   Location,
+  DocumentCopy,
   DocumentAdd,
   Setting
 } from '@element-plus/icons-vue'

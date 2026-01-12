@@ -11,7 +11,8 @@ const STORAGE_KEYS = {
   USERS: 'users',
   LOCATIONS: 'locations',
   SCHEDULES: 'schedules',
-  SETTINGS: 'settings'
+  SETTINGS: 'settings',
+  CUSTOMER_TYPES: 'customer_types'
 }
 
 // 生成唯一ID
@@ -358,6 +359,129 @@ export const settingsStorage = {
     } catch (error) {
       console.error('更新设置失败:', error)
       throw error
+    }
+  }
+}
+
+// 默认客户类型
+const DEFAULT_CUSTOMER_TYPES = [
+  { name: '常法', description: '常规法律事务', color: '#409EFF', sortOrder: 1, isDefault: true },
+  { name: '单案', description: '单项法律案件', color: '#67C23A', sortOrder: 2, isDefault: true },
+  { name: '非诉', description: '非诉讼法律服务', color: '#E6A23C', sortOrder: 3, isDefault: true },
+  { name: '其他', description: '其他类型客户', color: '#F56C6C', sortOrder: 4, isDefault: true }
+]
+
+// 客户类型数据操作
+export const customerTypeStorage = {
+  // 获取所有客户类型
+  async getAll() {
+    try {
+      let customerTypes = await localforage.getItem(STORAGE_KEYS.CUSTOMER_TYPES)
+
+      // 如果没有客户类型数据，初始化默认类型
+      if (!customerTypes || customerTypes.length === 0) {
+        customerTypes = []
+        for (const defaultType of DEFAULT_CUSTOMER_TYPES) {
+          const newType = {
+            id: generateId(),
+            ...defaultType,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+          customerTypes.push(newType)
+        }
+        await localforage.setItem(STORAGE_KEYS.CUSTOMER_TYPES, customerTypes)
+      }
+
+      return customerTypes.sort((a, b) => a.sortOrder - b.sortOrder)
+    } catch (error) {
+      console.error('获取客户类型数据失败:', error)
+      return []
+    }
+  },
+
+  // 根据ID获取客户类型
+  async getById(id) {
+    try {
+      const customerTypes = await this.getAll()
+      return customerTypes.find(type => type.id === id)
+    } catch (error) {
+      console.error('获取客户类型失败:', error)
+      return null
+    }
+  },
+
+  // 添加客户类型
+  async add(customerTypeData) {
+    try {
+      const customerTypes = await this.getAll()
+      // 创建新客户类型时，确保使用新生成的唯一ID，忽略传入的id（如果有的话）
+      const { id, ...dataWithoutId } = customerTypeData
+      const newCustomerType = {
+        id: generateId(),
+        ...dataWithoutId,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      customerTypes.push(newCustomerType)
+      await localforage.setItem(STORAGE_KEYS.CUSTOMER_TYPES, customerTypes)
+      return newCustomerType
+    } catch (error) {
+      console.error('添加客户类型失败:', error)
+      throw error
+    }
+  },
+
+  // 更新客户类型
+  async update(id, customerTypeData) {
+    try {
+      const customerTypes = await this.getAll()
+      const index = customerTypes.findIndex(type => type.id === id)
+      if (index === -1) throw new Error('客户类型不存在')
+
+      customerTypes[index] = {
+        ...customerTypes[index],
+        ...customerTypeData,
+        updatedAt: new Date().toISOString()
+      }
+      await localforage.setItem(STORAGE_KEYS.CUSTOMER_TYPES, customerTypes)
+      return customerTypes[index]
+    } catch (error) {
+      console.error('更新客户类型失败:', error)
+      throw error
+    }
+  },
+
+  // 删除客户类型
+  async delete(id) {
+    try {
+      const customerTypes = await this.getAll()
+      const customerType = customerTypes.find(type => type.id === id)
+      if (customerType && customerType.isDefault) {
+        throw new Error('不能删除系统默认的客户类型')
+      }
+
+      const filteredTypes = customerTypes.filter(type => type.id !== id)
+      await localforage.setItem(STORAGE_KEYS.CUSTOMER_TYPES, filteredTypes)
+      return true
+    } catch (error) {
+      console.error('删除客户类型失败:', error)
+      throw error
+    }
+  },
+
+  // 搜索客户类型
+  async search(query) {
+    try {
+      const customerTypes = await this.getAll()
+      const lowerQuery = query.toLowerCase()
+      return customerTypes.filter(type =>
+        type.name.toLowerCase().includes(lowerQuery) ||
+        type.description.toLowerCase().includes(lowerQuery)
+      )
+    } catch (error) {
+      console.error('搜索客户类型失败:', error)
+      return []
     }
   }
 }

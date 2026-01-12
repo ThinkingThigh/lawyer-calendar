@@ -24,6 +24,20 @@ export class Location {
   }
 }
 
+// 客户类型数据模型
+export class CustomerType {
+  constructor(data = {}) {
+    this.id = data.id || ''
+    this.name = data.name || ''
+    this.description = data.description || ''
+    this.color = data.color || '#409EFF' // 默认蓝色
+    this.isDefault = data.isDefault || false // 是否为系统默认类型
+    this.sortOrder = data.sortOrder || 0 // 排序顺序
+    this.createdAt = data.createdAt || new Date().toISOString()
+    this.updatedAt = data.updatedAt || new Date().toISOString()
+  }
+}
+
 // 日程数据模型
 export class Schedule {
   constructor(data = {}) {

@@ -401,9 +401,11 @@ const saveNewLocation = async () => {
     closeLocationCreationDialog()
     console.log('🔒 对话框已关闭')
 
-    // 设置选中值
+    // 设置选中值 - 同时设置下拉选择器和表单数据
     console.log('🎯 设置选中值:', newLocation.id)
+    selectedLocationId.value = newLocation.id
     formData.value.location = newLocation.name
+    formData.value.locationId = newLocation.id
     console.log('✅ 选中值设置完成')
 
   } catch (error) {
@@ -599,6 +601,7 @@ const saveNewLocation = async () => {
               v-model="formData.userId"
               placeholder="选择关联客户"
               clearable
+              filterable
               @change="handleClientChange"
             >
               <el-option
