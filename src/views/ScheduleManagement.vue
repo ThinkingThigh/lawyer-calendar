@@ -75,13 +75,12 @@ const filteredSchedules = computed(() => {
     })
   }
 
-  // 按关键词搜索
+  // 按关键词搜索（只搜索标题和描述）
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     result = result.filter(schedule =>
       schedule.title.toLowerCase().includes(query) ||
-      schedule.description.toLowerCase().includes(query) ||
-      schedule.location.toLowerCase().includes(query)
+      schedule.description.toLowerCase().includes(query)
     )
   }
 
@@ -229,7 +228,10 @@ const getLocationName = (schedule) => {
 
 // 格式化日期时间
 const formatDateTime = (dateString) => {
-  return new Date(dateString).toLocaleString('zh-CN')
+  if (!dateString) return '-'
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return '-'
+  return date.toLocaleString('zh-CN')
 }
 
 // 表格选择处理
@@ -308,7 +310,7 @@ onMounted(async () => {
       <div class="search-bar">
         <el-input
           v-model="searchQuery"
-          placeholder="搜索日程标题、描述或地点"
+          placeholder="搜索日程标题或描述"
           clearable
           style="width: 300px; margin-right: 10px"
         >
@@ -319,7 +321,7 @@ onMounted(async () => {
 
         <el-select
           v-model="selectedUserId"
-          placeholder="选择用户"
+          placeholder="选择客户"
           filterable
           remote
           :remote-method="searchUsers"
@@ -330,7 +332,7 @@ onMounted(async () => {
           <el-option
             v-for="user in filteredUsers"
             :key="user.id"
-            :label="`${user.name} (${user.phone})`"
+            :label="`${user.name} (${user.phone || '无电话'})`"
             :value="user.id"
           />
         </el-select>
@@ -379,41 +381,44 @@ onMounted(async () => {
       >
         <el-table-column type="selection" width="55" />
 
-        <el-table-column prop="title" label="标题" min-width="150" sortable>
+        <el-table-column prop="title" label="标题" min-width="120" sortable>
           <template #default="scope">
             <el-tag>{{ scope.row.title }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="startTime" label="开始时间" width="160" sortable>
+        <el-table-column prop="description" label="描述" min-width="150">
+          <template #default="scope">
+            <span
+              :title="scope.row.description"
+              style="display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+            >
+              {{ scope.row.description || '-' }}
+            </span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="startTime" label="开始时间" width="140" sortable>
           <template #default="scope">
             {{ formatDateTime(scope.row.startTime) }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="endTime" label="结束时间" width="160" sortable>
+        <el-table-column prop="endTime" label="结束时间" width="140" sortable>
           <template #default="scope">
             {{ formatDateTime(scope.row.endTime) }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="userId" label="关联用户" width="100">
+        <el-table-column prop="userId" label="客户" width="90">
           <template #default="scope">
             {{ getUserName(scope.row.userId) }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="location" label="地点" width="120">
+        <el-table-column prop="location" label="地点" width="100">
           <template #default="scope">
             {{ getLocationName(scope.row) || '-' }}
-          </template>
-        </el-table-column>
-
-        <el-table-column label="优先级" width="80">
-          <template #default="scope">
-            <el-tag :color="getPriorityTag(scope.row.priority).color">
-              {{ getPriorityTag(scope.row.priority).text }}
-            </el-tag>
           </template>
         </el-table-column>
 
