@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { userStorage, scheduleStorage, locationStorage, customerTypeStorage } from '../services/storage.js'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, Schedule } from '../models/types.js'
 import { useUserStore } from '../stores/userStore.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
+import * as XLSX from 'xlsx'
 import {
   ElCard,
   ElRow,
@@ -30,6 +31,10 @@ const scheduleDialogVisible = ref(false)
 const scheduleDialogTitle = ref('添加日程')
 const isEditMode = ref(false)
 const currentSchedule = ref(new Schedule())
+
+// 时间筛选
+const dateRange = ref([])
+const filteredSchedules = ref([])
 
 // 加载客户数据
 const loadUserData = async () => {
@@ -158,6 +163,69 @@ const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('zh-CN')
 }
 
+// 筛选日程
+const filterSchedules = () => {
+  let filtered = userSchedules.value
+
+  if (dateRange.value && dateRange.value.length === 2) {
+    const [startDate, endDate] = dateRange.value
+    const start = new Date(startDate).getTime()
+    const end = new Date(endDate).getTime() + 24 * 60 * 60 * 1000 - 1 // 包含结束日期的最后时刻
+
+    filtered = filtered.filter(schedule => {
+      const scheduleStart = new Date(schedule.startTime).getTime()
+      return scheduleStart >= start && scheduleStart <= end
+    })
+  }
+
+  filteredSchedules.value = filtered
+}
+
+// 清空筛选
+const clearDateFilter = () => {
+  dateRange.value = []
+  filterSchedules()
+}
+
+// 导出Excel
+const exportToExcel = () => {
+  if (filteredSchedules.value.length === 0) {
+    ElMessage.warning('没有数据可导出')
+    return
+  }
+
+  // 准备导出数据
+  const exportData = filteredSchedules.value.map(schedule => ({
+    '客户名称': user.value.name,
+    '日程标题': schedule.title,
+    '开始时间': formatDateTime(schedule.startTime),
+    '结束时间': formatDateTime(schedule.endTime),
+    '地点': schedule.location || ''
+  }))
+
+  // 创建工作簿
+  const ws = XLSX.utils.json_to_sheet(exportData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '客户日程')
+
+  // 生成文件名
+  const fileName = `${user.value.name}_日程_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.xlsx`
+
+  // 导出文件
+  XLSX.writeFile(wb, fileName)
+  ElMessage.success('导出成功')
+}
+
+// 监听筛选条件变化
+watch(dateRange, () => {
+  filterSchedules()
+})
+
+// 初始化筛选数据
+watch(userSchedules, () => {
+  filterSchedules()
+}, { immediate: true })
+
 onMounted(() => {
   loadUserData()
 })
@@ -220,8 +288,11 @@ onMounted(() => {
     <el-card class="schedules-card" style="margin-top: 20px;">
       <template #header>
         <div class="card-header">
-          <h2>关联日程 ({{ userSchedules.length }})</h2>
+          <h2>关联日程 ({{ filteredSchedules.length }})</h2>
           <div class="header-actions">
+            <el-button @click="exportToExcel">
+              导出Excel
+            </el-button>
             <el-button type="primary" @click="addSchedule">
               添加日程
             </el-button>
@@ -231,9 +302,35 @@ onMounted(() => {
 
       <el-empty v-if="userSchedules.length === 0" description="暂无关联日程" />
 
+      <!-- 时间筛选 -->
+      <div v-else class="schedule-filters">
+        <el-row :gutter="20" align="middle">
+          <el-col :span="12">
+            <label class="filter-label">时间筛选：</label>
+            <el-date-picker
+              v-model="dateRange"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              style="width: 300px"
+            />
+          </el-col>
+          <el-col :span="12">
+            <el-button @click="clearDateFilter" size="small">
+              清空筛选
+            </el-button>
+            <span class="filter-info">
+              共 {{ userSchedules.length }} 个日程，筛选后 {{ filteredSchedules.length }} 个
+            </span>
+          </el-col>
+        </el-row>
+      </div>
+
       <el-table
-        v-else
-        :data="userSchedules"
+        :data="filteredSchedules"
         style="width: 100%"
         stripe
         :default-sort="{prop: 'startTime', order: 'descending'}"
@@ -364,5 +461,24 @@ onMounted(() => {
 
 .schedules-card {
   margin-bottom: 20px;
+}
+
+.schedule-filters {
+  margin-bottom: 16px;
+  padding: 16px;
+  background-color: #fafafa;
+  border-radius: 6px;
+}
+
+.filter-label {
+  font-weight: 500;
+  color: #303133;
+  margin-right: 8px;
+}
+
+.filter-info {
+  margin-left: 16px;
+  color: #606266;
+  font-size: 14px;
 }
 </style>
