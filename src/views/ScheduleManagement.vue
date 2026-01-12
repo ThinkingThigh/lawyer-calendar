@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { useUserStore } from '../stores/userStore.js'
 import { scheduleStorage, userStorage, locationStorage } from '../services/storage.js'
-import { Schedule, STATUS_OPTIONS, PRIORITY_OPTIONS } from '../models/types.js'
+import { Schedule, STATUS_OPTIONS, PRIORITY_OPTIONS, EVENT_TYPE_OPTIONS } from '../models/types.js'
 import ScheduleDialog from '../components/ScheduleDialog.vue'
 import { Search } from '@element-plus/icons-vue'
 import dayjs from 'dayjs'
@@ -28,6 +28,8 @@ const locations = ref([])
 const searchQuery = ref('')
 const selectedUserId = ref('')
 const userSearchQuery = ref('')
+const selectedEventType = ref('')
+const selectedLocationId = ref('')
 const dialogVisible = ref(false)
 const dialogTitle = ref('添加日程')
 const isEditMode = ref(false)
@@ -57,6 +59,20 @@ const filteredSchedules = computed(() => {
   // 按用户过滤
   if (selectedUserId.value) {
     result = result.filter(schedule => schedule.userId === selectedUserId.value)
+  }
+
+  // 按事件类型过滤
+  if (selectedEventType.value) {
+    result = result.filter(schedule => schedule.eventType === selectedEventType.value)
+  }
+
+  // 按地点过滤
+  if (selectedLocationId.value) {
+    result = result.filter(schedule => {
+      const locationName = getLocationName(schedule)
+      const selectedLocation = locations.value.find(loc => loc.id === selectedLocationId.value)
+      return selectedLocation ? locationName === selectedLocation.name : false
+    })
   }
 
   // 按关键词搜索
@@ -231,6 +247,8 @@ const clearSearch = () => {
   searchQuery.value = ''
   selectedUserId.value = ''
   userSearchQuery.value = ''
+  selectedEventType.value = ''
+  selectedLocationId.value = ''
 }
 
 // 提供给子组件调用的方法
@@ -314,6 +332,34 @@ onMounted(async () => {
             :key="user.id"
             :label="`${user.name} (${user.phone})`"
             :value="user.id"
+          />
+        </el-select>
+
+        <el-select
+          v-model="selectedEventType"
+          placeholder="选择事件类型"
+          clearable
+          style="width: 150px; margin-right: 10px"
+        >
+          <el-option
+            v-for="option in EVENT_TYPE_OPTIONS"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+          />
+        </el-select>
+
+        <el-select
+          v-model="selectedLocationId"
+          placeholder="选择地点"
+          clearable
+          style="width: 150px; margin-right: 10px"
+        >
+          <el-option
+            v-for="location in locations"
+            :key="location.id"
+            :label="location.name"
+            :value="location.id"
           />
         </el-select>
 
