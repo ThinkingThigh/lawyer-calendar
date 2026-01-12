@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, watchEffect, nextTick, onMounted, onBeforeMount } from 'vue'
 import { STATUS_OPTIONS, PRIORITY_OPTIONS, DURATION_TYPE_OPTIONS, EVENT_TYPE_OPTIONS, User, Location } from '../models/types.js'
 import { userStorage, locationStorage } from '../services/storage.js'
 import { useUserStore } from '../stores/userStore.js'
@@ -19,7 +19,16 @@ import {
   ElRadioGroup,
   ElRadio
 } from 'element-plus'
-import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, User as UserIcon } from '@element-plus/icons-vue'
+
+// 组件生命周期调试
+onBeforeMount(() => {
+  console.log('🎯 ScheduleDialog onBeforeMount')
+})
+
+onMounted(() => {
+  console.log('🎉 ScheduleDialog onMounted, visible:', props.visible)
+})
 
 const props = defineProps({
   visible: {
@@ -134,9 +143,10 @@ const locationFormRules = {
   address: [{ required: false, message: '请输入地址', trigger: 'blur' }]
 }
 
-// 用户选项 - 直接使用store的数据
+// 用户选项 - 使用传入的用户数据
 const userOptions = computed(() => {
-  const options = userStore.users.map(user => ({
+  const users = props.users || []
+  const options = users.map(user => ({
     value: user.id,
     label: user.name
   }))
@@ -148,6 +158,13 @@ const userOptions = computed(() => {
   })
 
   return options
+})
+
+// 当前选中客户的名称
+const selectedUserName = computed(() => {
+  if (!formData.value.userId) return ''
+  const user = props.users.find(u => u.id === formData.value.userId)
+  return user ? user.name : ''
 })
 
 // 地点选项
@@ -196,8 +213,10 @@ const ensureDataLoaded = async () => {
   ])
 }
 
-// 监听对话框显示状态
-watch(() => props.visible, async (visible) => {
+// 使用 watchEffect 来监听对话框状态变化
+watchEffect(async () => {
+  const visible = props.visible
+
   if (visible) {
     // 确保用户和地点数据已加载
     await ensureDataLoaded()
@@ -205,7 +224,15 @@ watch(() => props.visible, async (visible) => {
     // 当对话框打开时，同步表单数据
     isSyncing.value = true
     await nextTick()
-    formData.value = { ...props.modelValue }
+
+    if (props.modelValue) {
+      formData.value = { ...props.modelValue }
+
+      // 确保 userId 是字符串类型
+      if (formData.value.userId) {
+        formData.value.userId = String(formData.value.userId)
+      }
+    }
 
     // 根据locationId或location设置selectedLocationId
     if (formData.value.locationId) {
@@ -430,6 +457,12 @@ const saveNewLocation = async () => {
       :rules="formRules"
       label-width="80px"
     >
+      <!-- 客户提示信息 -->
+      <div v-if="selectedUserName" class="client-info-banner">
+        <el-icon><UserIcon /></el-icon>
+        <span>将为客户 <strong>{{ selectedUserName }}</strong> 添加日程</span>
+      </div>
+
       <el-row :gutter="20">
         <el-col :span="24">
           <el-form-item label="标题" prop="title">
@@ -792,6 +825,27 @@ const saveNewLocation = async () => {
 
 .expand-icon {
   transition: transform 0.3s ease;
+}
+
+.client-info-banner {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background-color: #f0f9ff;
+  border: 1px solid #b3e5fc;
+  border-radius: 6px;
+  color: #1976d2;
+  font-size: 14px;
+}
+
+.client-info-banner .el-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.client-info-banner strong {
+  color: #0d47a1;
 }
 
 
